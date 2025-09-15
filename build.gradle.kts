@@ -22,6 +22,16 @@ kotlin {
     }
 
     // No JVM target: project is Native/JS/WASM focused; do not add JVM here
+    // Note: JS target temporarily disabled due to repository configuration issues
+
+    // iOS targets
+    iosArm64()
+    iosX64()
+    iosSimulatorArm64()
+
+    // Additional Native targets
+    linuxArm64()
+    mingwX64()
 
     macosArm64 {
         binaries {
@@ -55,17 +65,60 @@ kotlin {
                 implementation("com.squareup.okio:okio:3.10.2")
             }
         }
-        // Native shared source set (optional, exists due to expect/actual logger)
+
+        // JS shared source set (temporarily disabled)
+        // val jsMain by getting {
+        //     dependsOn(commonMain)
+        // }
+        // val jsTest by getting {
+        //     dependsOn(commonTest)
+        // }
+
+        // Native shared source set (for expect/actual logger)
         val nativeMain by creating {
             dependsOn(commonMain)
         }
         val nativeTest by creating {
             dependsOn(commonTest)
         }
-        val macosArm64Main by getting { dependsOn(nativeMain) }
-        val macosArm64Test by getting { dependsOn(nativeTest) }
-        val linuxX64Main by getting { dependsOn(nativeMain) }
-        val linuxX64Test by getting { dependsOn(nativeTest) }
+
+        // Apple shared source set
+        val appleMain by creating {
+            dependsOn(nativeMain)
+        }
+        val appleTest by creating {
+            dependsOn(nativeTest)
+        }
+
+        // Linux shared source set
+        val linuxMain by creating {
+            dependsOn(nativeMain)
+        }
+        val linuxTest by creating {
+            dependsOn(nativeTest)
+        }
+
+        // macOS targets
+        val macosArm64Main by getting { dependsOn(appleMain) }
+        val macosArm64Test by getting { dependsOn(appleTest) }
+
+        // iOS targets
+        val iosArm64Main by getting { dependsOn(appleMain) }
+        val iosArm64Test by getting { dependsOn(appleTest) }
+        val iosX64Main by getting { dependsOn(appleMain) }
+        val iosX64Test by getting { dependsOn(appleTest) }
+        val iosSimulatorArm64Main by getting { dependsOn(appleMain) }
+        val iosSimulatorArm64Test by getting { dependsOn(appleTest) }
+
+        // Linux targets
+        val linuxX64Main by getting { dependsOn(linuxMain) }
+        val linuxX64Test by getting { dependsOn(linuxTest) }
+        val linuxArm64Main by getting { dependsOn(linuxMain) }
+        val linuxArm64Test by getting { dependsOn(linuxTest) }
+
+        // Windows targets
+        val mingwX64Main by getting { dependsOn(nativeMain) }
+        val mingwX64Test by getting { dependsOn(nativeTest) }
     }
 }
 
@@ -142,6 +195,9 @@ tasks.register("test") {
             println("\n[ZLib.kotlin] Native tests are disabled by default.")
             println("To run macOS tests: ./gradlew -PwithTests=true macosArm64Test")
             println("To run Linux tests: ./gradlew -PwithTests=true linuxX64Test")
+            println("To run all iOS tests: ./gradlew -PwithTests=true iosX64Test iosSimulatorArm64Test")
+            println("To run Windows tests: ./gradlew -PwithTests=true mingwX64Test")
+            println("To run all available tests: ./gradlew -PwithTests=true allTests")
             println("Or use host-agnostic: ./gradlew -PwithTests=true test\n")
         }
     }
