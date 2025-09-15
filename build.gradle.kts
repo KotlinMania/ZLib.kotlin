@@ -35,10 +35,28 @@ kotlin {
         binaries.executable()
     }
 
+    // WebAssembly target (disabled for now due to complex repository setup)
+    // @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    // wasmJs {
+    //     binaries.executable()
+    //     nodejs()
+    // }
+
     // iOS targets
     iosArm64()
     iosX64()
     iosSimulatorArm64()
+
+    // watchOS targets
+    watchosArm32()
+    watchosArm64()
+    watchosX64()
+    watchosSimulatorArm64()
+
+    // tvOS targets
+    tvosArm64()
+    tvosX64()
+    tvosSimulatorArm64()
 
     // Additional Native targets
     linuxArm64()
@@ -85,6 +103,14 @@ kotlin {
             dependsOn(commonTest)
         }
 
+        // WASM shared source set (disabled for now)
+        // val wasmJsMain by getting {
+        //     dependsOn(commonMain)
+        // }
+        // val wasmJsTest by getting {
+        //     dependsOn(commonTest)
+        // }
+
         // Native shared source set (for expect/actual logger)
         val nativeMain by creating {
             dependsOn(commonMain)
@@ -120,6 +146,24 @@ kotlin {
         val iosX64Test by getting { dependsOn(appleTest) }
         val iosSimulatorArm64Main by getting { dependsOn(appleMain) }
         val iosSimulatorArm64Test by getting { dependsOn(appleTest) }
+
+        // watchOS targets
+        val watchosArm32Main by getting { dependsOn(appleMain) }
+        val watchosArm32Test by getting { dependsOn(appleTest) }
+        val watchosArm64Main by getting { dependsOn(appleMain) }
+        val watchosArm64Test by getting { dependsOn(appleTest) }
+        val watchosX64Main by getting { dependsOn(appleMain) }
+        val watchosX64Test by getting { dependsOn(appleTest) }
+        val watchosSimulatorArm64Main by getting { dependsOn(appleMain) }
+        val watchosSimulatorArm64Test by getting { dependsOn(appleTest) }
+
+        // tvOS targets
+        val tvosArm64Main by getting { dependsOn(appleMain) }
+        val tvosArm64Test by getting { dependsOn(appleTest) }
+        val tvosX64Main by getting { dependsOn(appleMain) }
+        val tvosX64Test by getting { dependsOn(appleTest) }
+        val tvosSimulatorArm64Main by getting { dependsOn(appleMain) }
+        val tvosSimulatorArm64Test by getting { dependsOn(appleTest) }
 
         // Linux targets
         val linuxX64Main by getting { dependsOn(linuxMain) }
@@ -204,13 +248,16 @@ tasks.register("test") {
     } else {
         doFirst {
             println("\n[ZLib.kotlin] Native tests are disabled by default.")
-            println("To run macOS tests: ./gradlew -PwithTests=true macosArm64Test")
-            println("To run Linux tests: ./gradlew -PwithTests=true linuxX64Test")
-            println("To run all iOS tests: ./gradlew -PwithTests=true iosX64Test iosSimulatorArm64Test")
-            println("To run Windows tests: ./gradlew -PwithTests=true mingwX64Test")
-            println("To run JavaScript tests: ./gradlew -PwithTests=true jsTest")
-            println("To run all available tests: ./gradlew -PwithTests=true allTests")
-            println("Or use host-agnostic: ./gradlew -PwithTests=true test\n")
+            println("Platform-specific test commands:")
+            println("  macOS:     ./gradlew -PwithTests=true macosArm64Test")
+            println("  Linux:     ./gradlew -PwithTests=true linuxX64Test linuxArm64Test")
+            println("  Windows:   ./gradlew -PwithTests=true mingwX64Test")
+            println("  iOS:       ./gradlew -PwithTests=true iosX64Test iosSimulatorArm64Test")
+            println("  watchOS:   ./gradlew -PwithTests=true watchosX64Test watchosSimulatorArm64Test")
+            println("  tvOS:      ./gradlew -PwithTests=true tvosX64Test tvosSimulatorArm64Test")
+            println("  JavaScript: ./gradlew -PwithTests=true jsTest")
+            println("  All tests: ./gradlew -PwithTests=true allTests")
+            println("  Host-auto: ./gradlew -PwithTests=true test\n")
         }
     }
 }
