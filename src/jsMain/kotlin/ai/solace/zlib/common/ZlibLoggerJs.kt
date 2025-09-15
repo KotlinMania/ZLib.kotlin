@@ -12,8 +12,13 @@ actual fun logToFile(line: String) {
 
 actual fun getEnv(name: String): String? =
     try {
-        // In Node.js environment, we can access process.env
-        js("typeof process !== 'undefined' && process.env[name]") as? String
+        // In Node.js environment, we can access process.env safely
+        if (js("typeof process !== 'undefined'")) {
+            val env = js("process.env").asDynamic()
+            env[name] as? String
+        } else {
+            null
+        }
     } catch (_: Throwable) {
         null
     }
