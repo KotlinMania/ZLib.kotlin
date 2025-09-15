@@ -7,12 +7,12 @@ import ai.solace.zlib.common.TREE_BASE_DIST
 import ai.solace.zlib.common.TREE_BASE_LENGTH
 import ai.solace.zlib.common.TREE_EXTRA_DBITS
 import ai.solace.zlib.common.TREE_EXTRA_LBITS
+import ai.solace.zlib.common.Z_OK
+import ai.solace.zlib.common.Z_STREAM_ERROR
 import ai.solace.zlib.inflate.CanonicalHuffman
 import ai.solace.zlib.inflate.StreamingBitWriter
 import okio.BufferedSink
 import okio.BufferedSource
-import ai.solace.zlib.common.Z_OK
-import ai.solace.zlib.common.Z_STREAM_ERROR
 
 /**
  * Streaming zlib compressor (stored blocks only, no Huffman) for correctness and portability.
