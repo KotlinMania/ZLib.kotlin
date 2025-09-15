@@ -22,7 +22,18 @@ kotlin {
     }
 
     // No JVM target: project is Native/JS/WASM focused; do not add JVM here
-    // Note: JS target temporarily disabled due to repository configuration issues
+
+    // JavaScript (Node.js) target
+    js(IR) {
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "10s"
+                }
+            }
+        }
+        binaries.executable()
+    }
 
     // iOS targets
     iosArm64()
@@ -66,13 +77,13 @@ kotlin {
             }
         }
 
-        // JS shared source set (temporarily disabled)
-        // val jsMain by getting {
-        //     dependsOn(commonMain)
-        // }
-        // val jsTest by getting {
-        //     dependsOn(commonTest)
-        // }
+        // JS shared source set
+        val jsMain by getting {
+            dependsOn(commonMain)
+        }
+        val jsTest by getting {
+            dependsOn(commonTest)
+        }
 
         // Native shared source set (for expect/actual logger)
         val nativeMain by creating {
@@ -197,6 +208,7 @@ tasks.register("test") {
             println("To run Linux tests: ./gradlew -PwithTests=true linuxX64Test")
             println("To run all iOS tests: ./gradlew -PwithTests=true iosX64Test iosSimulatorArm64Test")
             println("To run Windows tests: ./gradlew -PwithTests=true mingwX64Test")
+            println("To run JavaScript tests: ./gradlew -PwithTests=true jsTest")
             println("To run all available tests: ./gradlew -PwithTests=true allTests")
             println("Or use host-agnostic: ./gradlew -PwithTests=true test\n")
         }
