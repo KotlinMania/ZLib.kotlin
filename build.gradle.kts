@@ -131,9 +131,10 @@ tasks.register("test") {
         when {
             osName.contains("mac") -> dependsOn("macosArm64Test")
             osName.contains("nux") || osName.contains("linux") -> dependsOn("linuxX64Test")
-            else -> doFirst {
-                println("[ZLib.kotlin] No native test task configured for host OS: $osName")
-            }
+            else ->
+                doFirst {
+                    println("[ZLib.kotlin] No native test task configured for host OS: $osName")
+                }
         }
     } else {
         doFirst {
