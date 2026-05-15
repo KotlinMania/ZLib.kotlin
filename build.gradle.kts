@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    kotlin("multiplatform") version "2.2.10"
+    kotlin("multiplatform") version "2.2.20"
     id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
@@ -239,11 +239,10 @@ tasks.register("test") {
         when {
             osName.contains("mac") -> dependsOn("macosArm64Test")
             osName.contains("nux") || osName.contains("linux") -> dependsOn("linuxX64Test")
-            else -> {
+            else ->
                 doFirst {
                     println("[ZLib.kotlin] No native test task configured for host OS: $osName")
                 }
-            }
         }
     } else {
         doFirst {
