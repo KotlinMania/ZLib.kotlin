@@ -38,8 +38,11 @@ This library is a clean-room rewrite from the RFCs (RFC 1950 and RFC 1951). It i
 
 ## Features
 
-- **Pure Kotlin/Native implementation:** No C/C++ code or JNI required.
-- **Multiplatform support:** Kotlin Native for Linux and macOS targets.
+- **Pure Kotlin implementation:** No C/C++ code or JNI required.
+- **Comprehensive multiplatform support:** 
+  - **Native targets:** macOS (ARM64), Linux (x64, ARM64), Windows (x64), iOS (ARM64, x64, Simulator)
+  - **JavaScript:** Node.js runtime support
+  - **Future targets:** WebAssembly and Android Native planned
 - **Familiar API:** Designed to be comfortable for users familiar with zlib; .NET ports (zlib.net, zlib.managed) served as useful references.
 - **Fast and lightweight:** Efficient, battle-tested algorithms for compression and decompression.
 - **Zero dependencies:** No need for external libraries or system zlib installs.
@@ -116,23 +119,57 @@ Practical examples demonstrating:
 
 ## Compatibility
 
-- **Kotlin/Native:** Linux, macOS
+### Supported Platforms
 
-Tested with IntelliJ IDEA and Gradle.
+- **Native Targets:**
+  - **macOS:** ARM64 (Apple Silicon)
+  - **Linux:** x64, ARM64
+  - **Windows:** x64 (via mingw)
+  - **iOS:** ARM64, x64, Simulator ARM64
+  - **watchOS:** ARM32, ARM64, x64, Simulator ARM64
+  - **tvOS:** ARM64, x64, Simulator ARM64
+
+- **JavaScript:** Node.js runtime
+
+- **Planned:** WebAssembly, Android Native
+
+All targets are tested and fully functional. For platform-specific build requirements, see the Testing section below.
 
 ---
 
 ## Testing
 
-Run the multiplatform tests using Gradle. For example, to execute the Linux x64
-tests run:
+Run multiplatform tests using Gradle with the `-PwithTests=true` flag. Tests are disabled by default to speed up normal builds.
+
+### Platform-Specific Tests
 
 ```bash
-./gradlew linuxX64Test
+# Native targets  
+./gradlew -PwithTests=true macosArm64Test        # macOS ARM64
+./gradlew -PwithTests=true linuxX64Test          # Linux x64
+./gradlew -PwithTests=true linuxArm64Test        # Linux ARM64
+./gradlew -PwithTests=true mingwX64Test          # Windows x64
+
+# iOS targets
+./gradlew -PwithTests=true iosX64Test            # iOS x64
+./gradlew -PwithTests=true iosSimulatorArm64Test # iOS Simulator ARM64
+
+# watchOS targets  
+./gradlew -PwithTests=true watchosX64Test            # watchOS x64
+./gradlew -PwithTests=true watchosSimulatorArm64Test # watchOS Simulator ARM64
+
+# tvOS targets
+./gradlew -PwithTests=true tvosX64Test            # tvOS x64
+./gradlew -PwithTests=true tvosSimulatorArm64Test # tvOS Simulator ARM64
+
+# JavaScript
+./gradlew -PwithTests=true jsTest                # Node.js
+
+# Run all available tests
+./gradlew -PwithTests=true allTests              # All platforms
 ```
 
-Native targets have their own `<target>Test` task (e.g., `./gradlew macosArm64Test`). 
-macOS target tasks may be disabled when running on a non-macOS host.
+**Note:** Some platform tests may only run on compatible host systems (e.g., iOS tests typically require macOS).
 
 ---
 
