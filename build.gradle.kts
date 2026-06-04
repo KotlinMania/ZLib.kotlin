@@ -103,11 +103,10 @@ val requiredAndroidSdkPackageDirs =
     )
 
 fun writeAndroidLocalProperties() {
-    val sdkDirPropertyValue = projectAndroidSdkDir.absolutePath.replace("\\", "/")
-    layout.projectDirectory
-        .file("local.properties")
-        .asFile
-        .writeText("sdk.dir=$sdkDirPropertyValue\n")
+    val localPropertiesFile = layout.projectDirectory.file("local.properties").asFile
+    val desired = "sdk.dir=.android-sdk\n"
+    if (localPropertiesFile.exists() && localPropertiesFile.readText() == desired) return
+    localPropertiesFile.writeText(desired)
 }
 
 fun isProjectAndroidSdkInstalled(): Boolean =
@@ -596,7 +595,7 @@ val codeqlCompileJvm =
     tasks.register<JavaExec>("codeqlCompileJvm") {
         description =
             "Compile ${codeqlKotlinSourceSetNames.joinToString(",")} Kotlin sources " +
-                "with kotlinc $codeqlLanguageVersion for CodeQL Java/Kotlin extraction."
+            "with kotlinc $codeqlLanguageVersion for CodeQL Java/Kotlin extraction."
         group = "verification"
         classpath(codeqlKotlincFiles)
         mainClass.set("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
@@ -737,7 +736,10 @@ tasks.register("swiftExportSmokeTest") {
             }.assertNormalExitValue()
 
         val generatedPackageSwift =
-            layout.buildDirectory.file("SPMPackage/macosArm64/Debug/Package.swift").get().asFile
+            layout.buildDirectory
+                .file("SPMPackage/macosArm64/Debug/Package.swift")
+                .get()
+                .asFile
         if (generatedPackageSwift.exists()) {
             val text = generatedPackageSwift.readText()
             if (!text.contains("platforms:")) {
