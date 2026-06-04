@@ -1,48 +1,42 @@
-name: CodeQL
-
-# Universal CodeQL config for KotlinMania repos.
-#
-# We do NOT analyze `java-kotlin`. The CodeQL Kotlin extractor only hooks
-# JVM `kotlinc` invocations; Kotlin/Native and Kotlin/JS compilations
-# produce no traced events, so `database finalize` aborts with
-# "CodeQL could not process any code written in Java/Kotlin" on KMP
-# projects without a JVM target. This repo has no maintained JavaScript or
-# TypeScript source for CodeQL to extract, so `actions` covers workflow files.
+name: "CodeQL Advanced"
 
 on:
   schedule:
-    - cron: "27 4 * * 1"
-
+    - cron: '44 16 * * 0'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
-  analyze:
-    name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+  actions:
+    uses: ./.github/workflows/codeql-actions.yml
     permissions:
-      security-events: write
-      packages: read
       actions: read
       contents: read
+      packages: read
+      security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: actions
-            build-mode: none
+  java-kotlin:
+    uses: ./.github/workflows/codeql-java-kotlin.yml
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.2
+  android:
+    uses: ./.github/workflows/codeql-android.yml
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
+  javascript-typescript:
+    uses: ./.github/workflows/codeql-javascript-typescript.yml
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
