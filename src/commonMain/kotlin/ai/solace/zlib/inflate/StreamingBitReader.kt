@@ -1,13 +1,13 @@
 package ai.solace.zlib.inflate
 
-import okio.BufferedSource
+import kotlinx.io.Source
 
 /**
  * StreamingBitReader - LSB-first bit reader over a streaming source.
  * Maintains a small bit buffer and pulls more bytes from the underlying source on demand.
  */
 class StreamingBitReader(
-    private val source: BufferedSource,
+    private val source: Source,
 ) {
     private var bitBuffer: Int = 0
     private var bitCount: Int = 0

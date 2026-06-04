@@ -4,9 +4,10 @@ import ai.solace.zlib.common.Z_STREAM_END
 import ai.solace.zlib.common.ZlibLogger
 import ai.solace.zlib.deflate.DeflateStream
 import ai.solace.zlib.inflate.InflateStream
-import okio.FileSystem
-import okio.Path.Companion.toPath
-import okio.buffer
+import kotlinx.io.buffered
+import kotlinx.io.files.FileSystem
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 
 private fun printHelp() {
     println("ZLib.kotlin - Pure arithmetic zlib implementation")
@@ -35,23 +36,15 @@ fun main(args: Array<String>) {
                 println("Usage: ${args[0]} <input.txt> <output.zz> [level]")
                 return
             }
-            val inPath = args[1].toPath()
-            val outPath = args[2].toPath()
+            val fileSystem: FileSystem = SystemFileSystem
+            val inPath = Path(args[1])
+            val outPath = Path(args[2])
             val level = args.getOrNull(3)?.toIntOrNull() ?: 6
-            val src = FileSystem.SYSTEM.source(inPath).buffer()
-            val snk = FileSystem.SYSTEM.sink(outPath).buffer()
-            try {
-                val bytesIn = DeflateStream.compressZlib(src, snk, level)
-                val outSize = FileSystem.SYSTEM.metadata(outPath).size ?: -1L
-                println("Compressed $bytesIn bytes to $outSize bytes (level=$level)")
-            } finally {
-                try {
-                    src.close()
-                } catch (_: Throwable) {
-                }
-                try {
-                    snk.close()
-                } catch (_: Throwable) {
+            fileSystem.source(inPath).buffered().useResource { src ->
+                fileSystem.sink(outPath).buffered().useResource { snk ->
+                    val bytesIn = DeflateStream.compressZlib(src, snk, level)
+                    val outSize = fileSystem.metadataOrNull(outPath)?.size ?: -1L
+                    println("Compressed $bytesIn bytes to $outSize bytes (level=$level)")
                 }
             }
         }
@@ -61,27 +54,19 @@ fun main(args: Array<String>) {
                 println("Usage: ${args[0]} <input.zz> <output.txt>")
                 return
             }
-            val inPath = args[1].toPath()
-            val outPath = args[2].toPath()
-            val src = FileSystem.SYSTEM.source(inPath).buffer()
-            val snk = FileSystem.SYSTEM.sink(outPath).buffer()
-            try {
-                val (result, bytesOut) = InflateStream.inflateZlib(src, snk)
-                snk.flush()
-                if (result == Z_STREAM_END) {
-                    val inSize = FileSystem.SYSTEM.metadata(inPath).size ?: -1L
-                    println("Decompressed $inSize bytes to $bytesOut bytes")
-                } else {
-                    println("Decompression failed: $result")
-                }
-            } finally {
-                try {
-                    src.close()
-                } catch (_: Throwable) {
-                }
-                try {
-                    snk.close()
-                } catch (_: Throwable) {
+            val fileSystem: FileSystem = SystemFileSystem
+            val inPath = Path(args[1])
+            val outPath = Path(args[2])
+            fileSystem.source(inPath).buffered().useResource { src ->
+                fileSystem.sink(outPath).buffered().useResource { snk ->
+                    val (result, bytesOut) = InflateStream.inflateZlib(src, snk)
+                    snk.flush()
+                    if (result == Z_STREAM_END) {
+                        val inSize = fileSystem.metadataOrNull(inPath)?.size ?: -1L
+                        println("Decompressed $inSize bytes to $bytesOut bytes")
+                    } else {
+                        println("Decompression failed: $result")
+                    }
                 }
             }
         }
@@ -102,5 +87,13 @@ fun main(args: Array<String>) {
             println("Unknown command: ${args[0]}")
             printHelp()
         }
+    }
+}
+
+private inline fun <T : AutoCloseable, R> T.useResource(block: (T) -> R): R {
+    try {
+        return block(this)
+    } finally {
+        this.close()
     }
 }

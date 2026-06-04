@@ -1,12 +1,13 @@
 package ai.solace.zlib.zip
 
 import ai.solace.zlib.inflate.InflateStream
-import okio.Buffer
-import okio.BufferedSink
-import okio.FileSystem
-import okio.Path
-import okio.Source
-import okio.buffer
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.Source
+import kotlinx.io.buffered
+import kotlinx.io.readByteArray
+import kotlinx.io.files.FileSystem
+import kotlinx.io.files.Path
 
 /** Minimal ZIP reader supporting STORE (0) and DEFLATE (8, raw). */
 object ZipReader {
@@ -30,118 +31,137 @@ object ZipReader {
     )
 
     fun list(fs: FileSystem, path: Path): List<Entry> {
-        // Read whole file into memory to scan from the end
-        val fileBuf = Buffer()
-        fs.source(path).use { s ->
-            val bs = s.buffer()
-            fileBuf.writeAll(bs)
-        }
-        val size = fileBuf.size
-        val eocd = findEocd(fileBuf.clone(), size) ?: return emptyList()
-        // Central directory parsing
-        val cdBuf = fileBuf.clone()
-        cdBuf.skip(eocd.cdOffset)
+        val raw = fs.source(path)
+        val src = raw.buffered()
+        return src.useResource { list(it) }
+    }
+
+    fun list(src: Source): List<Entry> {
+        val bytes = src.readByteArray()
+        val eocdOffset = findEocd(bytes) ?: return emptyList()
+        val eocd = parseEocd(bytes, eocdOffset)
         val entries = mutableListOf<Entry>()
-        var read = 0L
-        while (read < eocd.cdSize) {
-            val sig = cdBuf.readIntLe()
+        var offset = eocd.cdOffset.toInt()
+        val cdEnd = offset + eocd.cdSize.toInt()
+        while (offset + 46 <= bytes.size && offset < cdEnd) {
+            val sig = readIntLe(bytes, offset)
             if (sig != SIG_CEN) break
-            cdBuf.skip(2) // ver made
-            cdBuf.skip(2) // ver req
-            val gpbf = cdBuf.readShortLe().toInt() and 0xFFFF
-            val method = cdBuf.readShortLe().toInt() and 0xFFFF
-            cdBuf.skip(4) // time/date
-            cdBuf.skip(4) // crc32
-            val compSize = cdBuf.readIntLe().toLong() and 0xFFFFFFFFL
-            val uncompSize = cdBuf.readIntLe().toLong() and 0xFFFFFFFFL
-            val nameLen = cdBuf.readShortLe().toInt() and 0xFFFF
-            val extraLen = cdBuf.readShortLe().toInt() and 0xFFFF
-            val commentLen = cdBuf.readShortLe().toInt() and 0xFFFF
-            cdBuf.skip(2) // disk start
-            cdBuf.skip(2) // int attr
-            cdBuf.skip(4) // ext attr
-            val lho = cdBuf.readIntLe().toLong() and 0xFFFFFFFFL
-            val name = cdBuf.readUtf8(nameLen.toLong())
-            if (extraLen > 0) cdBuf.skip(extraLen.toLong())
-            if (commentLen > 0) cdBuf.skip(commentLen.toLong())
-            entries.add(Entry(name, method, compSize, uncompSize, lho, gpbf))
-            read += 46 + nameLen + extraLen + commentLen
+            val gpbf = readShortLe(bytes, offset + 8)
+            val method = readShortLe(bytes, offset + 10)
+            val compSize = readUIntLe(bytes, offset + 20)
+            val uncompSize = readUIntLe(bytes, offset + 24)
+            val nameLen = readShortLe(bytes, offset + 28)
+            val extraLen = readShortLe(bytes, offset + 30)
+            val commentLen = readShortLe(bytes, offset + 32)
+            val lho = readUIntLe(bytes, offset + 42)
+            val nameStart = offset + 46
+            val nameEnd = nameStart + nameLen
+            if (nameEnd > bytes.size) break
+            val name = bytes.copyOfRange(nameStart, nameEnd).decodeToString()
+            val recordEnd = nameEnd + extraLen + commentLen
+            if (recordEnd > bytes.size) break
+            val entry = Entry(
+                name = name,
+                compression = method,
+                compressedSize = compSize,
+                uncompressedSize = uncompSize,
+                localHeaderOffset = lho,
+                generalPurposeFlag = gpbf,
+            )
+            entries.add(entry)
+            offset = recordEnd
         }
         return entries
     }
 
-    fun extract(fs: FileSystem, path: Path, entry: Entry, out: BufferedSink): Long {
-        fs.source(path).use { s ->
-            val src = s.buffer()
-            // Seek to local header offset by skipping forward
-            var remaining = entry.localHeaderOffset
-            while (remaining > 0) {
-                val skipped = src.skip(remaining)
-                if (skipped <= 0) break
-                remaining -= skipped
+    fun extract(
+        fs: FileSystem,
+        path: Path,
+        entry: Entry,
+        sink: Sink,
+    ): Long {
+        val raw = fs.source(path)
+        val src = raw.buffered()
+        return src.useResource { extract(it, entry, sink) }
+    }
+
+    fun extract(
+        src: Source,
+        entry: Entry,
+        sink: Sink,
+    ): Long {
+        val bytes = src.readByteArray()
+        return extractFromBytes(bytes, entry, sink)
+    }
+
+    private fun extractFromBytes(bytes: ByteArray, entry: Entry, sink: Sink): Long {
+        val headerOffset = entry.localHeaderOffset.toInt()
+        require(headerOffset + 30 <= bytes.size) { "Local header outside ZIP bounds" }
+        val sig = readIntLe(bytes, headerOffset)
+        require(sig == SIG_LOC) { "Bad local header sig" }
+        val method = readShortLe(bytes, headerOffset + 8)
+        val compSize = readUIntLe(bytes, headerOffset + 18)
+        val nameLen = readShortLe(bytes, headerOffset + 26)
+        val extraLen = readShortLe(bytes, headerOffset + 28)
+        val dataStart = headerOffset + 30 + nameLen + extraLen
+        require(compSize <= Int.MAX_VALUE) { "Compressed entry too large for in-memory extraction" }
+        val compSizeInt = compSize.toInt()
+        require(dataStart <= bytes.size) { "Local header truncated" }
+        val dataEnd = dataStart + compSizeInt
+        require(dataEnd <= bytes.size) { "Compressed data outside ZIP bounds" }
+
+        return when (method) {
+            0 -> { // STORE
+                sink.write(bytes, dataStart, dataEnd)
+                compSize
             }
-            val sig = src.readIntLe()
-            require(sig == SIG_LOC) { "Bad local header" }
-            src.skip(2) // ver
-            src.skip(2) // gpbf
-            val method = src.readShortLe().toInt() and 0xFFFF
-            src.skip(4) // time/date
-            src.skip(4) // crc
-            val compSize = src.readIntLe().toLong() and 0xFFFFFFFFL
-            src.skip(4) // uncompSize
-            val nameLen = src.readShortLe().toInt() and 0xFFFF
-            val extraLen = src.readShortLe().toInt() and 0xFFFF
-            src.skip(nameLen.toLong())
-            if (extraLen > 0) src.skip(extraLen.toLong())
-            return when (method) {
-                0 -> { // STORE
-                    var left = compSize
-                    val buf = Buffer()
-                    var written = 0L
-                    while (left > 0) {
-                        val n = minOf(left, 8192L)
-                        src.readFully(buf, n)
-                        out.write(buf, n)
-                        written += n
-                        left -= n
-                    }
-                    written
-                }
-                8 -> { // DEFLATE raw
-                    val payload = Buffer()
-                    src.readFully(payload, compSize)
-                    val (rc, outBytes) = InflateStream.inflateRaw(payload, out)
-                    outBytes
-                }
-                else -> error("Unsupported compression: $method")
+            8 -> { // DEFLATE raw
+                val limited = Buffer()
+                limited.write(bytes, dataStart, dataEnd)
+                val (_, out) = InflateStream.inflateRaw(limited, sink)
+                out
             }
+            else -> error("Unsupported compression method: $method")
         }
     }
 
-    private fun findEocd(src: Buffer, size: Long): Eocd? {
+    private fun findEocd(bytes: ByteArray): Int? {
+        val minIndex = (bytes.size - 22).coerceAtLeast(0)
         val maxComment = 0xFFFF
-        val search = minOf(size, (22 + maxComment).toLong())
-        src.skip(size - search)
-        val window = src.readByteArray(search)
-        for (i in window.size - 22 downTo 0) {
-            if (window[i].toInt() and 0xFF == 0x50 &&
-                window.getOrNull(i + 1)?.toInt()?.and(0xFF) == 0x4B &&
-                window.getOrNull(i + 2)?.toInt()?.and(0xFF) == 0x05 &&
-                window.getOrNull(i + 3)?.toInt()?.and(0xFF) == 0x06
-            ) {
-                val buf = Buffer().write(window, i, window.size - i)
-                buf.skip(4) // sig
-                buf.skip(2) // disk
-                buf.skip(2) // cd start disk
-                buf.skip(2) // entries this disk
-                buf.skip(2) // total entries
-                val cdSize = buf.readIntLe().toLong() and 0xFFFFFFFFL
-                val cdOffset = buf.readIntLe().toLong() and 0xFFFFFFFFL
-                val commentLen = buf.readShortLe().toInt() and 0xFFFF
-                return Eocd(cdOffset, cdSize, 0)
-            }
+        val lowerBound = (bytes.size - 22 - maxComment).coerceAtLeast(0)
+        for (i in minIndex downTo lowerBound) {
+            if (readIntLe(bytes, i) == SIG_EOCD) return i
         }
         return null
     }
+
+    private fun parseEocd(bytes: ByteArray, offset: Int): Eocd {
+        val cdSize = readUIntLe(bytes, offset + 12)
+        val cdOffset = readUIntLe(bytes, offset + 16)
+        val totalEntries = readShortLe(bytes, offset + 10)
+        return Eocd(cdOffset, cdSize, totalEntries)
+    }
 }
 
+private inline fun <T : AutoCloseable, R> T.useResource(block: (T) -> R): R {
+    try {
+        return block(this)
+    } finally {
+        this.close()
+    }
+}
+
+private fun readShortLe(bytes: ByteArray, offset: Int): Int {
+    return ((bytes[offset].toInt() and 0xFF) or ((bytes[offset + 1].toInt() and 0xFF) shl 8))
+}
+
+private fun readIntLe(bytes: ByteArray, offset: Int): Int {
+    return (bytes[offset].toInt() and 0xFF) or
+        ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
+        ((bytes[offset + 2].toInt() and 0xFF) shl 16) or
+        ((bytes[offset + 3].toInt() and 0xFF) shl 24)
+}
+
+private fun readUIntLe(bytes: ByteArray, offset: Int): Long {
+    return readIntLe(bytes, offset).toLong() and 0xFFFFFFFFL
+}

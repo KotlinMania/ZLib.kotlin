@@ -4,7 +4,7 @@ This section documents the current, ground-truth API based on the code under src
 
 - Kotlin version: 2.1.20
 - Platforms: Multiplatform (Native targets configured in Gradle)
-- IO: Okio BufferedSource/BufferedSink for streaming
+- IO: kotlinx-io Source/Sink for streaming
 
 Contents (current API):
 - Compression/Decompression
@@ -21,29 +21,30 @@ Contents (current API):
 
 Package: ai.solace.zlib.deflate / ai.solace.zlib.inflate
 
-- DeflateStream.compressZlib(source: okio.BufferedSource, sink: okio.BufferedSink, level: Int = 6): Long
+- DeflateStream.compressZlib(source: kotlinx.io.Source, sink: kotlinx.io.Sink, level: Int = 6): Long
   - Compresses from source to sink with a zlib wrapper. Returns the number of input bytes consumed.
   - level <= 0 uses stored blocks, 1 uses fixed Huffman, >=2 uses dynamic Huffman.
 
-- InflateStream.inflateZlib(source: okio.BufferedSource, sink: okio.BufferedSink): Pair<Int, Long>
+- InflateStream.inflateZlib(source: kotlinx.io.Source, sink: kotlinx.io.Sink): Pair<Int, Long>
   - Decompresses a zlib stream from source to sink.
   - Returns (resultCode, bytesWritten). resultCode is ai.solace.zlib.common.Z_OK on success.
 
 Example:
 ```kotlin
-val inPath = "input.txt".toPath()
-val outPath = "output.zz".toPath()
-FileSystem.SYSTEM.source(inPath).buffer().use { src ->
-    FileSystem.SYSTEM.sink(outPath).buffer().use { snk ->
+val fs: kotlinx.io.files.FileSystem = kotlinx.io.files.SystemFileSystem
+val inPath = kotlinx.io.files.Path("input.txt")
+val outPath = kotlinx.io.files.Path("output.zz")
+fs.source(inPath).buffered().use { src ->
+    fs.sink(outPath).buffered().use { snk ->
         val bytesIn = DeflateStream.compressZlib(src, snk, level = 6)
         println("Compressed $bytesIn bytes")
     }
 }
 
 // Decompress
-val outTxt = "output.txt".toPath()
-FileSystem.SYSTEM.source(outPath).buffer().use { src ->
-    FileSystem.SYSTEM.sink(outTxt).buffer().use { snk ->
+val outTxt = kotlinx.io.files.Path("output.txt")
+fs.source(outPath).buffered().use { src ->
+    fs.sink(outTxt).buffered().use { snk ->
         val (rc, bytesOut) = InflateStream.inflateZlib(src, snk)
         check(rc == Z_OK)
         println("Decompressed $bytesOut bytes")
@@ -57,14 +58,14 @@ FileSystem.SYSTEM.source(outPath).buffer().use { src ->
 
 Package: ai.solace.zlib.inflate
 
-- class StreamingBitReader(source: okio.BufferedSource)
+- class StreamingBitReader(source: kotlinx.io.Source)
   - peek(n: Int): Int // 0..16 bits (LSB-first)
   - take(n: Int): Int // consume n bits
   - alignToByte()
   - readAlignedByte(): Int
   - peekBytes(count: Int): ByteArray // diagnostics; may return empty
 
-- class StreamingBitWriter(sink: okio.BufferedSink)
+- class StreamingBitWriter(sink: kotlinx.io.Sink)
   - writeBits(value: Int, count: Int)
   - alignToByte()
   - flush()
@@ -140,7 +141,7 @@ Package: ai.solace.zlib.cli
     - compress|deflate <input> <output.zz> [level]
     - decompress|inflate <input.zz> <output>
     - log-on | log-off | help
-  - Uses Okio FileSystem to read/write files.
+  - Uses kotlinx-io FileSystem to read/write files.
 
 ---
 

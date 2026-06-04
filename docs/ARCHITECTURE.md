@@ -4,13 +4,13 @@ This section reflects the present codebase under src/commonMain and the CLI. It 
 
 ## High-level modules
 - ai.solace.zlib.deflate.DeflateStream (object)
-  - compressZlib(source: okio.BufferedSource, sink: okio.BufferedSink, level: Int = 6): Long
+  - compressZlib(source: kotlinx.io.Source, sink: kotlinx.io.Sink, level: Int = 6): Long
   - Emits zlib header, deflate blocks (stored/fixed/dynamic), and Adler-32 trailer.
 - ai.solace.zlib.inflate.InflateStream (functions)
-  - inflateZlib(source: okio.BufferedSource, sink: okio.BufferedSink): Pair<Int, Long>
+  - inflateZlib(source: kotlinx.io.Source, sink: kotlinx.io.Sink): Pair<Int, Long>
   - Parses zlib header, deflate blocks, validates data, returns (Z_OK, bytesOut) on success.
 - ai.solace.zlib.inflate.StreamingBitReader / StreamingBitWriter
-  - LSB-first bit I/O over Okio streams with small in-memory buffers; writer uses ArithmeticBitwiseOps for arithmetic-only shifts.
+  - LSB-first bit I/O over kotlinx-io streams with small in-memory buffers; writer uses ArithmeticBitwiseOps for arithmetic-only shifts.
 - ai.solace.zlib.inflate.CanonicalHuffman
   - Builds canonical encoders/decoders and full decode tables; used by both compression and decompression.
 - ai.solace.zlib.bitwise.*
@@ -23,16 +23,16 @@ This section reflects the present codebase under src/commonMain and the CLI. It 
 - ai.solace.zlib.common.Constants
   - Centralized zlib constants (levels, strategies, return codes, Huffman and window parameters), and version().
 - ai.solace.zlib.cli.ZLibCli
-  - CLI entry point: compress|deflate, decompress|inflate, log-on/off using Okio FileSystem.
+  - CLI entry point: compress|deflate, decompress|inflate, log-on/off using kotlinx-io FileSystem.
 
 ## Data flow (current)
-- Compression: BufferedSource -> DeflateStream.compressZlib -> StreamingBitWriter -> sink (BufferedSink) + Adler32 trailer.
-- Decompression: source (BufferedSource) -> StreamingBitReader + InflateStream.inflateZlib -> sink (BufferedSink).
+- Compression: Source -> DeflateStream.compressZlib -> StreamingBitWriter -> sink (Sink) + Adler32 trailer.
+- Decompression: source (Source) -> StreamingBitReader + InflateStream.inflateZlib -> sink (Sink).
 - Huffman: CanonicalHuffman builds/consumes tables for fixed/dynamic modes.
 - Bitwise: Writers and helpers avoid undefined platform shifts by using arithmetic implementations when required.
 
 ## Notes
-- IO is based on Okio for portability across KMP.
+- IO is based on kotlinx-io for portability across KMP.
 - Bitwise operations for algorithmic correctness are centralized; Adler32Utils does not use BitShiftEngine.
 - Return codes and constants come from ai.solace.zlib.common.Constants.
 

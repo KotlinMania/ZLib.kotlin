@@ -14,15 +14,17 @@ import ai.solace.zlib.common.Z_OK
 import ai.solace.zlib.common.Z_STREAM_END
 import ai.solace.zlib.common.ZlibLogger
 import kotlin.math.min
-import okio.BufferedSink
-import okio.BufferedSource
-import okio.IOException
+import kotlinx.io.IOException
+import kotlinx.io.Sink
+import kotlinx.io.Source
 
 /**
- * Streaming zlib inflate: reads from a BufferedSource and writes to a BufferedSink.
+ * Streaming zlib inflate: reads from a Source and writes to a Sink.
  * Maintains a 32 KiB sliding window for back-references and validates the Adler-32 trailer.
  */
 object InflateStream {
+    private fun Sink.writeByte(value: Int) = writeByte((value and 0xFF).toByte())
+
     private const val WINDOW_SIZE = 32 * 1024
 
     private fun readZlibHeader(br: StreamingBitReader): Int {
@@ -46,7 +48,7 @@ object InflateStream {
 
     private fun copyStored(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -80,7 +82,7 @@ object InflateStream {
 
     private fun writeByte(
         b: Int,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -216,7 +218,7 @@ object InflateStream {
     private fun copyMatch(
         length: Int,
         dist: Int,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -264,7 +266,7 @@ object InflateStream {
 
     private fun decodeFixed(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -298,7 +300,7 @@ object InflateStream {
 
     private fun decodeDynamic(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -374,8 +376,8 @@ object InflateStream {
      * Inflate a zlib-wrapped stream from [source] to [sink]. Returns Pair(resultCode, bytesOut).
      */
     fun inflateZlib(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
     ): Pair<Int, Long> {
         val br = StreamingBitReader(source)
         val outCount = longArrayOf(0L)
@@ -433,6 +435,51 @@ object InflateStream {
         } catch (e: IOException) {
             // I/O failure from underlying source/sink
             ZlibLogger.logInflate("I/O error during inflate: ${e.message}", "inflateZlib")
+            return Z_ERRNO to outCount[0]
+        }
+    }
+
+    /**
+     * Inflate a raw DEFLATE stream (RFC1951) from [source] to [sink], without zlib headers or Adler-32 trailer.
+     * Returns Pair(resultCode, bytesOut).
+     */
+    fun inflateRaw(
+        source: Source,
+        sink: Sink,
+    ): Pair<Int, Long> {
+        val br = StreamingBitReader(source)
+        val window = ByteArray(WINDOW_SIZE)
+        val posRef = intArrayOf(0)
+        val adler = longArrayOf(1L) // tracked but not validated on raw
+        val outCount = longArrayOf(0L)
+        var totalOut = 0L
+        try {
+            while (true) {
+                val last = br.take(1)
+                when (br.take(2)) {
+                    0 -> {
+                        val r = copyStored(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    1 -> {
+                        val r = decodeFixed(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    2 -> {
+                        val r = decodeDynamic(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    else -> return Z_DATA_ERROR to totalOut
+                }
+                totalOut = outCount[0]
+                if (last == 1) break
+            }
+            return Z_STREAM_END to totalOut
+        } catch (e: SourceExhausted) {
+            return Z_BUF_ERROR to outCount[0]
+        } catch (e: DataFormatException) {
+            return Z_DATA_ERROR to outCount[0]
+        } catch (e: IOException) {
             return Z_ERRNO to outCount[0]
         }
     }

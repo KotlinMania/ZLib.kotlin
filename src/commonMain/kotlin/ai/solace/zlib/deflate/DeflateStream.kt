@@ -11,8 +11,8 @@ import ai.solace.zlib.common.Z_OK
 import ai.solace.zlib.common.Z_STREAM_ERROR
 import ai.solace.zlib.inflate.CanonicalHuffman
 import ai.solace.zlib.inflate.StreamingBitWriter
-import okio.BufferedSink
-import okio.BufferedSource
+import kotlinx.io.Sink
+import kotlinx.io.Source
 
 /**
  * Streaming zlib compressor (stored blocks only, no Huffman) for correctness and portability.
@@ -21,6 +21,20 @@ import okio.BufferedSource
  * - Appends Adler-32 trailer (big-endian).
  */
 object DeflateStream {
+    private fun Sink.writeByte(value: Int) = writeByte((value and 0xFF).toByte())
+
+    private fun Sink.write(
+        source: ByteArray,
+        offset: Int,
+        byteCount: Int,
+    ) = write(source, offset, offset + byteCount)
+
+    private fun Source.read(
+        sink: ByteArray,
+        offset: Int,
+        byteCount: Int,
+    ): Int = readAtMostTo(sink, offset, offset + byteCount)
+
     private const val MAX_STORED = 65535
 
     /** level: 1 (fast) .. 9 (best) maps to zlib FLEVEL advisory. */
@@ -33,7 +47,7 @@ object DeflateStream {
         }
 
     private fun writeZlibHeader(
-        sink: BufferedSink,
+        sink: Sink,
         level: Int,
     ) {
         val cm = 8 // deflate
@@ -56,7 +70,7 @@ object DeflateStream {
 
     /** Write a 32-bit big-endian integer to sink. */
     private fun writeBe32(
-        sink: BufferedSink,
+        sink: Sink,
         value: Int,
     ) {
         sink.writeByte((value ushr 24) and 0xFF)
@@ -67,7 +81,7 @@ object DeflateStream {
 
     /** Write zlib Adler-32 trailer (big-endian 4 bytes). */
     private fun writeAdler32Trailer(
-        sink: BufferedSink,
+        sink: Sink,
         adler: Long,
     ) {
         writeBe32(sink, adler.toInt())
@@ -79,7 +93,7 @@ object DeflateStream {
      */
     private fun writeStoredBlockHeader(
         bw: StreamingBitWriter,
-        sink: BufferedSink,
+        sink: Sink,
         length: Int,
         bfinal: Int,
     ) {
@@ -300,8 +314,8 @@ object DeflateStream {
 
     /** Compress from source to sink with zlib wrapper using fixed Huffman (with simple RLE), fallback to stored when level<=0. */
     fun compressZlib(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long =
         when {
@@ -316,8 +330,8 @@ object DeflateStream {
      * Currently validates the compression level to be at most 9; negative values are treated as stored mode.
      */
     fun compressZlibResult(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Pair<Int, Long> {
         if (level > 9) {
@@ -329,8 +343,8 @@ object DeflateStream {
 
     /** Stored-block compressor (no compression). */
     private fun compressZlibStored(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 0,
     ): Long {
         // Header
@@ -374,8 +388,8 @@ object DeflateStream {
 
     /** Fixed-Huffman compressor with streaming LZ77 (greedy+lazy), limited matcher, arithmetic bit writing. */
     private fun compressZlibFixed(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long {
         writeZlibHeader(sink, level)
@@ -554,8 +568,8 @@ object DeflateStream {
 
     /** Dynamic-Huffman compressor using frequency-based code lengths (≤15). Chooses stored vs fixed vs dynamic per block. */
     private fun compressZlibDynamic(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long {
         writeZlibHeader(sink, level)
