@@ -1,6 +1,6 @@
-package ai.solace.zlib.test
+package io.github.kotlinmania.zlib.test
 
-import ai.solace.zlib.deflate.Adler32
+import io.github.kotlinmania.zlib.deflate.Adler32
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

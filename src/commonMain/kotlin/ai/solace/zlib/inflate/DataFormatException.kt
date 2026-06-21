@@ -1,4 +1,4 @@
-package ai.solace.zlib.inflate
+package io.github.kotlinmania.zlib.inflate
 
 /**
  * Signals invalid or corrupt DEFLATE/zlib data encountered during decoding.

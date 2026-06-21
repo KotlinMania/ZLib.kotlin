@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalUnsignedTypes::class)
 
-package ai.solace.zlib.common
+package io.github.kotlinmania.zlib.common
 
 // Usage notes: this file declares a wide set of canonical zlib constants and tables.
 // To help IDE/linters that only see in-module references, here are verified usages

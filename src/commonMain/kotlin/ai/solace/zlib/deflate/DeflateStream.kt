@@ -1,16 +1,16 @@
 @file:Suppress("EmptyElseBlock")
 
-package ai.solace.zlib.deflate
+package io.github.kotlinmania.zlib.deflate
 
-import ai.solace.zlib.bitwise.checksum.Adler32Utils
-import ai.solace.zlib.common.TREE_BASE_DIST
-import ai.solace.zlib.common.TREE_BASE_LENGTH
-import ai.solace.zlib.common.TREE_EXTRA_DBITS
-import ai.solace.zlib.common.TREE_EXTRA_LBITS
-import ai.solace.zlib.common.Z_OK
-import ai.solace.zlib.common.Z_STREAM_ERROR
-import ai.solace.zlib.inflate.CanonicalHuffman
-import ai.solace.zlib.inflate.StreamingBitWriter
+import io.github.kotlinmania.zlib.bitwise.checksum.Adler32Utils
+import io.github.kotlinmania.zlib.common.TREE_BASE_DIST
+import io.github.kotlinmania.zlib.common.TREE_BASE_LENGTH
+import io.github.kotlinmania.zlib.common.TREE_EXTRA_DBITS
+import io.github.kotlinmania.zlib.common.TREE_EXTRA_LBITS
+import io.github.kotlinmania.zlib.common.Z_OK
+import io.github.kotlinmania.zlib.common.Z_STREAM_ERROR
+import io.github.kotlinmania.zlib.inflate.CanonicalHuffman
+import io.github.kotlinmania.zlib.inflate.StreamingBitWriter
 import okio.BufferedSink
 import okio.BufferedSource
 
@@ -889,7 +889,7 @@ object DeflateStream {
             val clFreq = IntArray(19)
             for (c in clSeq) clFreq[c.sym]++
             val blLens = HuffmanBuilder.buildLengths(clFreq, 7, ensureSymbol = 0)
-            val bitLengthOrder = ai.solace.zlib.common.TREE_BL_ORDER
+            val bitLengthOrder = io.github.kotlinmania.zlib.common.TREE_BL_ORDER
             var hclen = 19
             while (hclen > 4 && blLens[bitLengthOrder[hclen - 1]] == 0) hclen--
             val hclenOffset = hclen - 4

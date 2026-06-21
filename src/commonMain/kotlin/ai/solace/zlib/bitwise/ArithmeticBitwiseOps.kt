@@ -1,8 +1,8 @@
 @file:Suppress("unused", "UNUSED_PARAMETER")
 
-package ai.solace.zlib.bitwise
+package io.github.kotlinmania.zlib.bitwise
 
-import ai.solace.zlib.common.ZlibLogger
+import io.github.kotlinmania.zlib.common.ZlibLogger
 
 /**
  * ArithmeticBitwiseOps - Configurable arithmetic-only bitwise operations for cross-platform compatibility

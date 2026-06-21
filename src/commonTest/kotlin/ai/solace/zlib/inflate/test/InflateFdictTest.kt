@@ -1,7 +1,7 @@
-package ai.solace.zlib.inflate.test
+package io.github.kotlinmania.zlib.inflate.test
 
-import ai.solace.zlib.common.Z_NEED_DICT
-import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.zlib.common.Z_NEED_DICT
+import io.github.kotlinmania.zlib.inflate.InflateStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

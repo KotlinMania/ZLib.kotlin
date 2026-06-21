@@ -1,8 +1,8 @@
-package ai.solace.zlib.deflate.test
+package io.github.kotlinmania.zlib.deflate.test
 
-import ai.solace.zlib.common.Z_OK
-import ai.solace.zlib.common.Z_STREAM_ERROR
-import ai.solace.zlib.deflate.DeflateStream
+import io.github.kotlinmania.zlib.common.Z_OK
+import io.github.kotlinmania.zlib.common.Z_STREAM_ERROR
+import io.github.kotlinmania.zlib.deflate.DeflateStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

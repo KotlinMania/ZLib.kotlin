@@ -22,3 +22,4 @@ demo_*.txt
 demo_*.zz
 debug_*.kt
 simple_test.kt
+.android-sdk/

@@ -1,9 +1,9 @@
-package ai.solace.zlib.inflate.test
+package io.github.kotlinmania.zlib.inflate.test
 
-import ai.solace.zlib.common.Z_DATA_ERROR
-import ai.solace.zlib.inflate.CanonicalHuffman
-import ai.solace.zlib.inflate.InflateStream
-import ai.solace.zlib.inflate.StreamingBitWriter
+import io.github.kotlinmania.zlib.common.Z_DATA_ERROR
+import io.github.kotlinmania.zlib.inflate.CanonicalHuffman
+import io.github.kotlinmania.zlib.inflate.InflateStream
+import io.github.kotlinmania.zlib.inflate.StreamingBitWriter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import okio.Buffer

@@ -1,9 +1,9 @@
-package ai.solace.zlib.inflate.test
+package io.github.kotlinmania.zlib.inflate.test
 
-import ai.solace.zlib.common.Z_BUF_ERROR
-import ai.solace.zlib.common.Z_STREAM_END
-import ai.solace.zlib.deflate.DeflateStream
-import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.zlib.common.Z_BUF_ERROR
+import io.github.kotlinmania.zlib.common.Z_STREAM_END
+import io.github.kotlinmania.zlib.deflate.DeflateStream
+import io.github.kotlinmania.zlib.inflate.InflateStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

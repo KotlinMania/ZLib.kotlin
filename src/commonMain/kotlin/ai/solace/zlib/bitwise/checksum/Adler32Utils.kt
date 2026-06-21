@@ -1,8 +1,8 @@
-package ai.solace.zlib.bitwise.checksum
+package io.github.kotlinmania.zlib.bitwise.checksum
 
-import ai.solace.zlib.bitwise.BitwiseOps
-import ai.solace.zlib.common.ADLER_BASE
-import ai.solace.zlib.common.ADLER_NMAX
+import io.github.kotlinmania.zlib.bitwise.BitwiseOps
+import io.github.kotlinmania.zlib.common.ADLER_BASE
+import io.github.kotlinmania.zlib.common.ADLER_NMAX
 
 /**
  * Adler32 checksum implementation using plain arithmetic operations.

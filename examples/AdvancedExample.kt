@@ -1,8 +1,8 @@
 package examples
 
-import ai.solace.zlib.deflate.ZStream
-import ai.solace.zlib.deflate.ZStreamException
-import ai.solace.zlib.common.*
+import io.github.kotlinmania.zlib.deflate.ZStream
+import io.github.kotlinmania.zlib.deflate.ZStreamException
+import io.github.kotlinmania.zlib.common.*
 
 /**
  * Advanced compression example demonstrating different compression levels and strategies

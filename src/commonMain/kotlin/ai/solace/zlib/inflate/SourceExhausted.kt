@@ -1,4 +1,4 @@
-package ai.solace.zlib.inflate
+package io.github.kotlinmania.zlib.inflate
 
 /**
  * Indicates that the underlying source was exhausted before enough bits/bytes

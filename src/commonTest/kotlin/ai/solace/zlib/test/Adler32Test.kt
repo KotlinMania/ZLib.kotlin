@@ -1,9 +1,9 @@
-package ai.solace.zlib.test
+package io.github.kotlinmania.zlib.test
 
-import ai.solace.zlib.common.ADLER_BASE
-import ai.solace.zlib.common.ADLER_NMAX
-import ai.solace.zlib.common.ZlibLogger
-import ai.solace.zlib.deflate.Adler32
+import io.github.kotlinmania.zlib.common.ADLER_BASE
+import io.github.kotlinmania.zlib.common.ADLER_NMAX
+import io.github.kotlinmania.zlib.common.ZlibLogger
+import io.github.kotlinmania.zlib.deflate.Adler32
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

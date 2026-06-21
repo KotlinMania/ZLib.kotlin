@@ -1,6 +1,6 @@
-package ai.solace.zlib.bitwise.test
+package io.github.kotlinmania.zlib.bitwise.test
 
-import ai.solace.zlib.bitwise.ArithmeticBitwiseOps
+import io.github.kotlinmania.zlib.bitwise.ArithmeticBitwiseOps
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -19,7 +19,7 @@ Contents (current API):
 
 ## Compression/Decompression
 
-Package: ai.solace.zlib.deflate / ai.solace.zlib.inflate
+Package: io.github.kotlinmania.zlib.deflate / io.github.kotlinmania.zlib.inflate
 
 - DeflateStream.compressZlib(source: okio.BufferedSource, sink: okio.BufferedSink, level: Int = 6): Long
   - Compresses from source to sink with a zlib wrapper. Returns the number of input bytes consumed.
@@ -27,7 +27,7 @@ Package: ai.solace.zlib.deflate / ai.solace.zlib.inflate
 
 - InflateStream.inflateZlib(source: okio.BufferedSource, sink: okio.BufferedSink): Pair<Int, Long>
   - Decompresses a zlib stream from source to sink.
-  - Returns (resultCode, bytesWritten). resultCode is ai.solace.zlib.common.Z_OK on success.
+  - Returns (resultCode, bytesWritten). resultCode is io.github.kotlinmania.zlib.common.Z_OK on success.
 
 Example:
 ```kotlin
@@ -55,7 +55,7 @@ FileSystem.SYSTEM.source(outPath).buffer().use { src ->
 
 ## Streams (bit-level)
 
-Package: ai.solace.zlib.inflate
+Package: io.github.kotlinmania.zlib.inflate
 
 - class StreamingBitReader(source: okio.BufferedSource)
   - peek(n: Int): Int // 0..16 bits (LSB-first)
@@ -74,7 +74,7 @@ Package: ai.solace.zlib.inflate
 
 ## Bitwise utilities and engine
 
-Package: ai.solace.zlib.bitwise
+Package: io.github.kotlinmania.zlib.bitwise
 
 - enum class BitShiftMode { NATIVE, ARITHMETIC }
 - data class ShiftResult(value: Long, carry: Long = 0, overflow: Boolean = false)
@@ -102,7 +102,7 @@ Package: ai.solace.zlib.bitwise
   - orArithmetic(value1: Int, value2: Int): Int
   - orArithmeticGeneral(value1: Int, value2: Int): Int
   - rotateLeft(value: Int, bits: Int): Int; rotateRight(value: Int, bits: Int): Int
-  - withArithmeticEngine(): ai.solace.zlib.bitwise.ArithmeticBitwiseOps
+  - withArithmeticEngine(): io.github.kotlinmania.zlib.bitwise.ArithmeticBitwiseOps
   - urShiftImproved(number: Int, bits: Int, engine: BitShiftEngine = defaultEngine32): Int
   - urShiftImproved(number: Long, bits: Int, engine: BitShiftEngine = defaultEngine64): Long
 
@@ -123,7 +123,7 @@ Package: ai.solace.zlib.bitwise
 
 ## Checksum
 
-Package: ai.solace.zlib.bitwise.checksum
+Package: io.github.kotlinmania.zlib.bitwise.checksum
 
 - object Adler32Utils
   - adler32(adler: Long, buf: ByteArray?, index: Int, len: Int): Long
@@ -133,7 +133,7 @@ Package: ai.solace.zlib.bitwise.checksum
 
 ## CLI
 
-Package: ai.solace.zlib.cli
+Package: io.github.kotlinmania.zlib.cli
 
 - fun main(args: Array<String>)
   - Commands:
@@ -146,7 +146,7 @@ Package: ai.solace.zlib.cli
 
 ## Constants
 
-Package: ai.solace.zlib.common.Constants (file)
+Package: io.github.kotlinmania.zlib.common.Constants (file)
 
 Key constants you will typically use:
 - Compression levels: Z_NO_COMPRESSION(0), Z_BEST_SPEED(1), Z_BEST_COMPRESSION(9), Z_DEFAULT_COMPRESSION(-1)
@@ -321,7 +321,7 @@ throw ZStreamException("message")
 
 ## Constants
 
-All constants are defined in `ai.solace.zlib.common.Constants`:
+All constants are defined in `io.github.kotlinmania.zlib.common.Constants`:
 
 ### Compression Levels
 

@@ -1,6 +1,6 @@
-package ai.solace.zlib.zip
+package io.github.kotlinmania.zlib.zip
 
-import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.zlib.inflate.InflateStream
 import okio.Buffer
 import okio.BufferedSink
 import okio.FileSystem

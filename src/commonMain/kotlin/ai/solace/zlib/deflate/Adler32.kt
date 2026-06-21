@@ -1,6 +1,6 @@
-package ai.solace.zlib.deflate
+package io.github.kotlinmania.zlib.deflate
 
-import ai.solace.zlib.bitwise.checksum.Adler32Utils
+import io.github.kotlinmania.zlib.bitwise.checksum.Adler32Utils
 
 /**
  * Adler-32 checksum algorithm implementation.

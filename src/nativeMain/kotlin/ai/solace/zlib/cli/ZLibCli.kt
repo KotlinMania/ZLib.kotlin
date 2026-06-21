@@ -1,9 +1,9 @@
-package ai.solace.zlib.cli
+package io.github.kotlinmania.zlib.cli
 
-import ai.solace.zlib.common.Z_STREAM_END
-import ai.solace.zlib.common.ZlibLogger
-import ai.solace.zlib.deflate.DeflateStream
-import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.zlib.common.Z_STREAM_END
+import io.github.kotlinmania.zlib.common.ZlibLogger
+import io.github.kotlinmania.zlib.deflate.DeflateStream
+import io.github.kotlinmania.zlib.inflate.InflateStream
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.buffer

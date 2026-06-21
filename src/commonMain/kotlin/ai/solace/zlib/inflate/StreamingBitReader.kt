@@ -1,4 +1,4 @@
-package ai.solace.zlib.inflate
+package io.github.kotlinmania.zlib.inflate
 
 import okio.BufferedSource
 

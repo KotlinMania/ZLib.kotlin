@@ -2,7 +2,7 @@
 
 @file:Suppress("ktlint:standard:property-naming")
 
-package ai.solace.zlib.common
+package io.github.kotlinmania.zlib.common
 
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.alloc
