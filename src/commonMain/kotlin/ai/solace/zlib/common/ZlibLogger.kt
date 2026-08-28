@@ -2,6 +2,11 @@
 
 package ai.solace.zlib.common
 
+import io.github.kotlinmania.io.buffered
+import io.github.kotlinmania.io.files.Path
+import io.github.kotlinmania.io.files.SystemFileSystem
+import io.github.kotlinmania.io.writeString
+
 object ZlibLogger {
     // Logging flags (configurable via CLI/env)
     var ENABLE_LOGGING: Boolean = false
@@ -168,19 +173,22 @@ object ZlibLogger {
     }
 }
 
-/**
- * Platform-specific file append implementation
- */
-expect fun logToFile(line: String)
+var LOG_FILE_PATH: String? = null
+
+fun logToFile(line: String) {
+    try {
+        val path = LOG_FILE_PATH ?: "zlib.log"
+        val fsPath = Path(path)
+        SystemFileSystem.sink(fsPath, append = true).use { rawSink ->
+            val sink = rawSink.buffered()
+            sink.writeString(line)
+            sink.flush()
+        }
+    } catch (_: Throwable) {
+        // Fallback or ignore logging errors
+    }
+}
 
 expect fun getEnv(name: String): String?
 
-expect var LOG_FILE_PATH: String?
-
-/**
- * Platform-specific timestamp string (e.g. yyyy-MM-dd HH:mm:ss)
- */
-expect fun currentTimestamp(): String
-
-// Allow enabling logs in CI by setting ZLIB_LOGGING=1
-// platformEnable via env was removed to keep native interop simple
+fun currentTimestamp(): String = ""
