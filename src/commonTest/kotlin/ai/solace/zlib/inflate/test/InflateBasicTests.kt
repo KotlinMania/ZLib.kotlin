@@ -4,16 +4,18 @@ import ai.solace.zlib.common.Z_BUF_ERROR
 import ai.solace.zlib.common.Z_STREAM_END
 import ai.solace.zlib.deflate.DeflateStream
 import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.io.Buffer
+import io.github.kotlinmania.io.readString
+import io.github.kotlinmania.io.writeString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import okio.Buffer
 
 class InflateBasicTests {
     @Test
     fun inflate_returnsZStreamEnd_andRestoresOriginal() {
         val original = "hello world"
-        val src = Buffer().writeUtf8(original)
+        val src = Buffer().apply { writeString(original) }
         val compressed = Buffer()
 
         // Compress using default level
@@ -25,7 +27,7 @@ class InflateBasicTests {
         val (rc, bytesOut) = InflateStream.inflateZlib(compressed, out)
         assertEquals(Z_STREAM_END, rc)
         assertEquals(original.length.toLong(), bytesOut)
-        assertEquals(original, out.readUtf8())
+        assertEquals(original, out.readString())
     }
 
     @Test
@@ -38,8 +40,8 @@ class InflateBasicTests {
         val truncated = Buffer()
         val headerByte1 = full.readByte()
         val headerByte2 = full.readByte()
-        truncated.writeByte(headerByte1.toInt())
-        truncated.writeByte(headerByte2.toInt())
+        truncated.writeByte(headerByte1)
+        truncated.writeByte(headerByte2)
 
         val out = Buffer()
         val (rc, _) = InflateStream.inflateZlib(truncated, out)

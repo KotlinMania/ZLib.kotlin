@@ -2,10 +2,10 @@ package ai.solace.zlib.inflate.test
 
 import ai.solace.zlib.common.Z_NEED_DICT
 import ai.solace.zlib.inflate.InflateStream
+import io.github.kotlinmania.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import okio.Buffer
 
 class InflateFdictTest {
     @Test
@@ -22,13 +22,13 @@ class InflateFdictTest {
         flg = (flg and 0xE0) or fcheck
 
         // Write header
-        z.writeByte(cmf)
-        z.writeByte(flg)
+        z.writeByte(cmf.toByte())
+        z.writeByte(flg.toByte())
         // Write DICTID (4 bytes) as required when FDICT is set
-        z.writeByte(0x12)
-        z.writeByte(0x34)
-        z.writeByte(0x56)
-        z.writeByte(0x78)
+        z.writeByte(0x12.toByte())
+        z.writeByte(0x34.toByte())
+        z.writeByte(0x56.toByte())
+        z.writeByte(0x78.toByte())
 
         val out = Buffer()
         val (rc, bytesOut) = InflateStream.inflateZlib(z, out)

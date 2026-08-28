@@ -1,14 +1,14 @@
 package ai.solace.zlib.inflate
 
 import ai.solace.zlib.bitwise.ArithmeticBitwiseOps
-import okio.BufferedSink
+import io.github.kotlinmania.io.Sink
 
 /**
  * StreamingBitWriter - LSB-first bit writer to a streaming sink.
  * Uses arithmetic-only bit shifts via ArithmeticBitwiseOps.
  */
 class StreamingBitWriter(
-    private val sink: BufferedSink,
+    private val sink: Sink,
 ) {
     private val ops = ArithmeticBitwiseOps.BITS_32
     private var bitBuffer: Int = 0
@@ -28,7 +28,7 @@ class StreamingBitWriter(
         // Emit bytes while we have at least 8 bits
         while (bitCount >= 8) {
             val b = bitBuffer and 0xFF
-            sink.writeByte(b)
+            sink.writeByte(b.toByte())
             bitBuffer = ops.rightShift(bitBuffer.toLong(), 8).toInt()
             bitCount -= 8
         }

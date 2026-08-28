@@ -1,24 +1,52 @@
-# Ignore Gradle project-specific cache directory
-.gradle
-
-# Ignore Gradle build output directory
 build
-# Contributor graph refresh
-Repository cleaned of bot references
-/orig/
-/.kotlin/
+bin
+.idea/*
+*.iml
+.gradle
+.cache
+*.swp
 .DS_Store
-.idea/
-.continue/mcpServers/new-mcp-server.yaml
+.project
 
-# Log files
-zlib.log
+.kotlin
 
-# Test files and debug files
-test*.txt
-test*.zz  
-test*.zlib
-demo_*.txt
-demo_*.zz
-debug_*.kt
-simple_test.kt
+# Project-local Android SDK (auto-installed by build.gradle.kts).
+.android-sdk
+local.properties
+
+!.idea/vcs.xml
+!.idea/dictionaries
+!.idea/dictionaries/*
+!.idea/codeStyles
+!.idea/codeStyles/*
+
+.gradletasknamecache
+.settings
+.classpath
+
+logs
+
+# Upstream Rust source — clone freshly when porting begins
+tmp/
+!tmp/.gitkeep
+
+# AST distance reports and binaries
+port_status_report.md
+high_priority_ports.md
+ast_distance_*.txt
+tools/ast_distance
+
+# Swift Package Manager / Xcode workspace state
+.swiftpm/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# JVM heap dumps
+*.hprof
+java_pid*.hprof
+
+# Python bytecode
+__pycache__/
+*.pyc

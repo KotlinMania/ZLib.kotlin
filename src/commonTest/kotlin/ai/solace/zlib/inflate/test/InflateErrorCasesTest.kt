@@ -4,9 +4,9 @@ import ai.solace.zlib.common.Z_DATA_ERROR
 import ai.solace.zlib.inflate.CanonicalHuffman
 import ai.solace.zlib.inflate.InflateStream
 import ai.solace.zlib.inflate.StreamingBitWriter
+import io.github.kotlinmania.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import okio.Buffer
 
 class InflateErrorCasesTest {
     /**
@@ -20,8 +20,8 @@ class InflateErrorCasesTest {
         val z = Buffer()
 
         // Write a valid zlib header: 0x78, 0x9C (CMF/FLG with FCHECK correct)
-        z.writeByte(0x78)
-        z.writeByte(0x9C)
+        z.writeByte(0x78.toByte())
+        z.writeByte(0x9C.toByte())
 
         // We'll write a single fixed-Huffman DEFLATE block using our bit writer
         val bw = StreamingBitWriter(z)

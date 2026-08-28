@@ -13,13 +13,13 @@ import ai.solace.zlib.common.Z_NEED_DICT
 import ai.solace.zlib.common.Z_OK
 import ai.solace.zlib.common.Z_STREAM_END
 import ai.solace.zlib.common.ZlibLogger
+import io.github.kotlinmania.io.IOException
+import io.github.kotlinmania.io.Sink
+import io.github.kotlinmania.io.Source
 import kotlin.math.min
-import okio.BufferedSink
-import okio.BufferedSource
-import okio.IOException
 
 /**
- * Streaming zlib inflate: reads from a BufferedSource and writes to a BufferedSink.
+ * Streaming zlib inflate: reads from a Source and writes to a Sink.
  * Maintains a 32 KiB sliding window for back-references and validates the Adler-32 trailer.
  */
 object InflateStream {
@@ -46,7 +46,7 @@ object InflateStream {
 
     private fun copyStored(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -61,7 +61,7 @@ object InflateStream {
         var s2 = (adler[0] ushr 16) and 0xFFFF
         repeat(len) {
             val b = br.readAlignedByte()
-            sink.writeByte(b)
+            sink.writeByte(b.toByte())
             window[pos] = b.toByte()
             pos = (pos + 1) and (WINDOW_SIZE - 1)
             s1 = (s1 + (b and 0xFF)) % 65521
@@ -80,7 +80,7 @@ object InflateStream {
 
     private fun writeByte(
         b: Int,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -88,7 +88,7 @@ object InflateStream {
     ) {
         var s1 = adler[0] and 0xFFFF
         var s2 = (adler[0] ushr 16) and 0xFFFF
-        sink.writeByte(b)
+        sink.writeByte(b.toByte())
         window[posRef[0]] = b.toByte()
         posRef[0] = (posRef[0] + 1) and (WINDOW_SIZE - 1)
         s1 = (s1 + (b and 0xFF)) % 65521
@@ -216,7 +216,7 @@ object InflateStream {
     private fun copyMatch(
         length: Int,
         dist: Int,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -264,7 +264,7 @@ object InflateStream {
 
     private fun decodeFixed(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -298,7 +298,7 @@ object InflateStream {
 
     private fun decodeDynamic(
         br: StreamingBitReader,
-        sink: BufferedSink,
+        sink: Sink,
         window: ByteArray,
         posRef: IntArray,
         adler: LongArray,
@@ -374,8 +374,8 @@ object InflateStream {
      * Inflate a zlib-wrapped stream from [source] to [sink]. Returns Pair(resultCode, bytesOut).
      */
     fun inflateZlib(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
     ): Pair<Int, Long> {
         val br = StreamingBitReader(source)
         val outCount = longArrayOf(0L)
@@ -433,6 +433,55 @@ object InflateStream {
         } catch (e: IOException) {
             // I/O failure from underlying source/sink
             ZlibLogger.logInflate("I/O error during inflate: ${e.message}", "inflateZlib")
+            return Z_ERRNO to outCount[0]
+        }
+    }
+
+    /**
+     * Inflate a raw DEFLATE stream (no zlib header/trailer) from [source] to [sink].
+     * Returns Pair(resultCode, bytesOut).
+     */
+    fun inflateRaw(
+        source: Source,
+        sink: Sink,
+    ): Pair<Int, Long> {
+        val br = StreamingBitReader(source)
+        val outCount = longArrayOf(0L)
+        try {
+            val window = ByteArray(WINDOW_SIZE)
+            val posRef = intArrayOf(0)
+            val adler = longArrayOf(1L)
+            var totalOut = 0L
+
+            while (true) {
+                val last = br.take(1)
+                when (br.take(2)) {
+                    0 -> {
+                        val r = copyStored(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    1 -> {
+                        val r = decodeFixed(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    2 -> {
+                        val r = decodeDynamic(br, sink, window, posRef, adler, outCount)
+                        if (r != Z_OK) return r to totalOut
+                    }
+                    else -> return Z_DATA_ERROR to totalOut
+                }
+                totalOut = outCount[0]
+                if (last == 1) break
+            }
+            return Z_STREAM_END to totalOut
+        } catch (e: SourceExhausted) {
+            ZlibLogger.logInflate("Source exhausted during inflate: ${e.message}", "inflateRaw")
+            return Z_BUF_ERROR to outCount[0]
+        } catch (e: DataFormatException) {
+            ZlibLogger.logInflate("Data format error during inflate: ${e.message}", "inflateRaw")
+            return Z_DATA_ERROR to outCount[0]
+        } catch (e: IOException) {
+            ZlibLogger.logInflate("I/O error during inflate: ${e.message}", "inflateRaw")
             return Z_ERRNO to outCount[0]
         }
     }

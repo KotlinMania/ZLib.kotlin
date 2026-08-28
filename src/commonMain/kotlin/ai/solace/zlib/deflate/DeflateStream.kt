@@ -11,8 +11,8 @@ import ai.solace.zlib.common.Z_OK
 import ai.solace.zlib.common.Z_STREAM_ERROR
 import ai.solace.zlib.inflate.CanonicalHuffman
 import ai.solace.zlib.inflate.StreamingBitWriter
-import okio.BufferedSink
-import okio.BufferedSource
+import io.github.kotlinmania.io.Sink
+import io.github.kotlinmania.io.Source
 
 /**
  * Streaming zlib compressor (stored blocks only, no Huffman) for correctness and portability.
@@ -33,7 +33,7 @@ object DeflateStream {
         }
 
     private fun writeZlibHeader(
-        sink: BufferedSink,
+        sink: Sink,
         level: Int,
     ) {
         val cm = 8 // deflate
@@ -45,8 +45,8 @@ object DeflateStream {
         val cmfFlg = (cmf shl 8) or flg
         val fcheck = (31 - (cmfFlg % 31)) % 31
         flg = (flg and 0xE0) or fcheck
-        sink.writeByte(cmf)
-        sink.writeByte(flg)
+        sink.writeByte(cmf.toByte())
+        sink.writeByte(flg.toByte())
     }
 
     // Shared constant for 32 KiB deflate window/buffer
@@ -56,18 +56,18 @@ object DeflateStream {
 
     /** Write a 32-bit big-endian integer to sink. */
     private fun writeBe32(
-        sink: BufferedSink,
+        sink: Sink,
         value: Int,
     ) {
-        sink.writeByte((value ushr 24) and 0xFF)
-        sink.writeByte((value ushr 16) and 0xFF)
-        sink.writeByte((value ushr 8) and 0xFF)
-        sink.writeByte(value and 0xFF)
+        sink.writeByte(((value ushr 24) and 0xFF).toByte())
+        sink.writeByte(((value ushr 16) and 0xFF).toByte())
+        sink.writeByte(((value ushr 8) and 0xFF).toByte())
+        sink.writeByte((value and 0xFF).toByte())
     }
 
     /** Write zlib Adler-32 trailer (big-endian 4 bytes). */
     private fun writeAdler32Trailer(
-        sink: BufferedSink,
+        sink: Sink,
         adler: Long,
     ) {
         writeBe32(sink, adler.toInt())
@@ -79,7 +79,7 @@ object DeflateStream {
      */
     private fun writeStoredBlockHeader(
         bw: StreamingBitWriter,
-        sink: BufferedSink,
+        sink: Sink,
         length: Int,
         bfinal: Int,
     ) {
@@ -88,10 +88,10 @@ object DeflateStream {
         bw.alignToByte()
         val len = length and 0xFFFF
         val nlen = len.inv() and 0xFFFF
-        sink.writeByte(len and 0xFF)
-        sink.writeByte((len ushr 8) and 0xFF)
-        sink.writeByte(nlen and 0xFF)
-        sink.writeByte((nlen ushr 8) and 0xFF)
+        sink.writeByte((len and 0xFF).toByte())
+        sink.writeByte(((len ushr 8) and 0xFF).toByte())
+        sink.writeByte((nlen and 0xFF).toByte())
+        sink.writeByte(((nlen ushr 8) and 0xFF).toByte())
     }
 
     /** Write a literal symbol using provided code tables. */
@@ -300,8 +300,8 @@ object DeflateStream {
 
     /** Compress from source to sink with zlib wrapper using fixed Huffman (with simple RLE), fallback to stored when level<=0. */
     fun compressZlib(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long =
         when {
@@ -316,8 +316,8 @@ object DeflateStream {
      * Currently validates the compression level to be at most 9; negative values are treated as stored mode.
      */
     fun compressZlibResult(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Pair<Int, Long> {
         if (level > 9) {
@@ -329,8 +329,8 @@ object DeflateStream {
 
     /** Stored-block compressor (no compression). */
     private fun compressZlibStored(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 0,
     ): Long {
         // Header
@@ -347,7 +347,7 @@ object DeflateStream {
             var filled = 0
             // Fill up to MAX_STORED
             while (filled < toRead && !source.exhausted()) {
-                val n = source.read(buf, 0, minOf(buf.size, toRead - filled))
+                val n = source.readAtMostTo(buf, 0, minOf(buf.size, toRead - filled))
                 if (n == -1) break
                 if (n == 0) break
                 filled += n
@@ -374,8 +374,8 @@ object DeflateStream {
 
     /** Fixed-Huffman compressor with streaming LZ77 (greedy+lazy), limited matcher, arithmetic bit writing. */
     private fun compressZlibFixed(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long {
         writeZlibHeader(sink, level)
@@ -449,7 +449,7 @@ object DeflateStream {
 
         // Fill initial lookahead
         while (laLen < maxBufferCapacity && !source.exhausted()) {
-            val n = source.read(la, laLen, minOf(maxBufferCapacity - laLen, 64 * 1024))
+            val n = source.readAtMostTo(la, laLen, minOf(maxBufferCapacity, laLen + 64 * 1024))
             if (n <= 0) break
             adler = Adler32Utils.adler32(adler, la, laLen, n)
             laLen += n
@@ -526,7 +526,7 @@ object DeflateStream {
                 } else if (laLen == 0) {
                     laOff = 0
                 }
-                val n = source.read(la, laLen, minOf(maxBufferCapacity - laLen, 64 * 1024))
+                val n = source.readAtMostTo(la, laLen, minOf(maxBufferCapacity, laLen + 64 * 1024))
                 if (n > 0) {
                     adler = Adler32Utils.adler32(adler, la, laLen, n)
                     laLen += n
@@ -554,8 +554,8 @@ object DeflateStream {
 
     /** Dynamic-Huffman compressor using frequency-based code lengths (≤15). Chooses stored vs fixed vs dynamic per block. */
     private fun compressZlibDynamic(
-        source: BufferedSource,
-        sink: BufferedSink,
+        source: Source,
+        sink: Sink,
         level: Int = 6,
     ): Long {
         writeZlibHeader(sink, level)
@@ -640,7 +640,7 @@ object DeflateStream {
             // Initial fill for this block (limited by MAX_BLOCK)
             while (laLen < lookaheadBufferSize && blockRead < maxStoredSize && !source.exhausted()) {
                 val toRead = minOf(lookaheadBufferSize - laLen, maxStoredSize - blockRead, 64 * 1024)
-                val n = source.read(la, laLen, toRead)
+                val n = source.readAtMostTo(la, laLen, laLen + toRead)
                 if (n <= 0) break
                 // Save a copy for possible stored block
                 appendRaw(n)
@@ -771,7 +771,7 @@ object DeflateStream {
                     }
                     val toRead = minOf(lookaheadBufferSize - laLen, maxStoredSize - blockRead, 64 * 1024)
                     if (toRead > 0) {
-                        val n = source.read(la, laLen, toRead)
+                        val n = source.readAtMostTo(la, laLen, laLen + toRead)
                         if (n > 0) {
                             // Save raw
                             appendRaw(n)

@@ -3,10 +3,11 @@ package ai.solace.zlib.deflate.test
 import ai.solace.zlib.common.Z_OK
 import ai.solace.zlib.common.Z_STREAM_ERROR
 import ai.solace.zlib.deflate.DeflateStream
+import io.github.kotlinmania.io.Buffer
+import io.github.kotlinmania.io.writeString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import okio.Buffer
 
 class DeflateParameterValidationTest {
     @Test
@@ -34,7 +35,7 @@ class DeflateParameterValidationTest {
 
     @Test
     fun negativeLevel_treatedAsStored_ok() {
-        val src = Buffer().writeUtf8("")
+        val src = Buffer().apply { writeString("") }
         val snk = Buffer()
 
         val (rc, bytesIn) = DeflateStream.compressZlibResult(src, snk, level = -1)
