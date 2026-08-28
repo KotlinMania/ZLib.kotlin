@@ -3,17 +3,17 @@ package ai.solace.zlib.inflate.test
 import ai.solace.zlib.common.Z_DATA_ERROR
 import ai.solace.zlib.inflate.InflateStream
 import ai.solace.zlib.inflate.StreamingBitWriter
+import io.github.kotlinmania.io.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import okio.Buffer
 
 class InvalidBlockTypeTest {
     @Test
     fun reservedBlockType_returnsZDataError() {
         val z = Buffer()
         // Valid zlib header
-        z.writeByte(0x78)
-        z.writeByte(0x9C)
+        z.writeByte(0x78.toByte())
+        z.writeByte(0x9C.toByte())
 
         val bw = StreamingBitWriter(z)
         // BFINAL=1

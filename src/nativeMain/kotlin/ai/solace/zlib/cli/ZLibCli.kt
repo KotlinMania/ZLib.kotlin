@@ -4,9 +4,9 @@ import ai.solace.zlib.common.Z_STREAM_END
 import ai.solace.zlib.common.ZlibLogger
 import ai.solace.zlib.deflate.DeflateStream
 import ai.solace.zlib.inflate.InflateStream
-import okio.FileSystem
-import okio.Path.Companion.toPath
-import okio.buffer
+import io.github.kotlinmania.io.buffered
+import io.github.kotlinmania.io.files.Path
+import io.github.kotlinmania.io.files.SystemFileSystem
 
 private fun printHelp() {
     println("ZLib.kotlin - Pure arithmetic zlib implementation")
@@ -35,14 +35,14 @@ fun main(args: Array<String>) {
                 println("Usage: ${args[0]} <input.txt> <output.zz> [level]")
                 return
             }
-            val inPath = args[1].toPath()
-            val outPath = args[2].toPath()
+            val inPath = Path(args[1])
+            val outPath = Path(args[2])
             val level = args.getOrNull(3)?.toIntOrNull() ?: 6
-            val src = FileSystem.SYSTEM.source(inPath).buffer()
-            val snk = FileSystem.SYSTEM.sink(outPath).buffer()
+            val src = SystemFileSystem.source(inPath).buffered()
+            val snk = SystemFileSystem.sink(outPath).buffered()
             try {
                 val bytesIn = DeflateStream.compressZlib(src, snk, level)
-                val outSize = FileSystem.SYSTEM.metadata(outPath).size ?: -1L
+                val outSize = SystemFileSystem.metadataOrNull(outPath)?.size ?: -1L
                 println("Compressed $bytesIn bytes to $outSize bytes (level=$level)")
             } finally {
                 try {
@@ -61,15 +61,15 @@ fun main(args: Array<String>) {
                 println("Usage: ${args[0]} <input.zz> <output.txt>")
                 return
             }
-            val inPath = args[1].toPath()
-            val outPath = args[2].toPath()
-            val src = FileSystem.SYSTEM.source(inPath).buffer()
-            val snk = FileSystem.SYSTEM.sink(outPath).buffer()
+            val inPath = Path(args[1])
+            val outPath = Path(args[2])
+            val src = SystemFileSystem.source(inPath).buffered()
+            val snk = SystemFileSystem.sink(outPath).buffered()
             try {
                 val (result, bytesOut) = InflateStream.inflateZlib(src, snk)
                 snk.flush()
                 if (result == Z_STREAM_END) {
-                    val inSize = FileSystem.SYSTEM.metadata(inPath).size ?: -1L
+                    val inSize = SystemFileSystem.metadataOrNull(inPath)?.size ?: -1L
                     println("Decompressed $inSize bytes to $bytesOut bytes")
                 } else {
                     println("Decompression failed: $result")

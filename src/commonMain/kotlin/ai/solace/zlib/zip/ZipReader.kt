@@ -1,12 +1,15 @@
 package ai.solace.zlib.zip
 
 import ai.solace.zlib.inflate.InflateStream
-import okio.Buffer
-import okio.BufferedSink
-import okio.FileSystem
-import okio.Path
-import okio.Source
-import okio.buffer
+import io.github.kotlinmania.io.Buffer
+import io.github.kotlinmania.io.Sink
+import io.github.kotlinmania.io.files.FileSystem
+import io.github.kotlinmania.io.files.Path
+import io.github.kotlinmania.io.readByteArray
+import io.github.kotlinmania.io.readIntLe
+import io.github.kotlinmania.io.readShortLe
+import io.github.kotlinmania.io.readString
+import io.github.kotlinmania.io.write
 
 /** Minimal ZIP reader supporting STORE (0) and DEFLATE (8, raw). */
 object ZipReader {
@@ -30,16 +33,13 @@ object ZipReader {
     )
 
     fun list(fs: FileSystem, path: Path): List<Entry> {
-        // Read whole file into memory to scan from the end
         val fileBuf = Buffer()
         fs.source(path).use { s ->
-            val bs = s.buffer()
-            fileBuf.writeAll(bs)
+            fileBuf.transferFrom(s)
         }
         val size = fileBuf.size
-        val eocd = findEocd(fileBuf.clone(), size) ?: return emptyList()
-        // Central directory parsing
-        val cdBuf = fileBuf.clone()
+        val eocd = findEocd(fileBuf.copy(), size) ?: return emptyList()
+        val cdBuf = fileBuf.copy()
         cdBuf.skip(eocd.cdOffset)
         val entries = mutableListOf<Entry>()
         var read = 0L
@@ -61,7 +61,7 @@ object ZipReader {
             cdBuf.skip(2) // int attr
             cdBuf.skip(4) // ext attr
             val lho = cdBuf.readIntLe().toLong() and 0xFFFFFFFFL
-            val name = cdBuf.readUtf8(nameLen.toLong())
+            val name = cdBuf.readString(nameLen.toLong())
             if (extraLen > 0) cdBuf.skip(extraLen.toLong())
             if (commentLen > 0) cdBuf.skip(commentLen.toLong())
             entries.add(Entry(name, method, compSize, uncompSize, lho, gpbf))
@@ -70,16 +70,11 @@ object ZipReader {
         return entries
     }
 
-    fun extract(fs: FileSystem, path: Path, entry: Entry, out: BufferedSink): Long {
+    fun extract(fs: FileSystem, path: Path, entry: Entry, out: Sink): Long {
         fs.source(path).use { s ->
-            val src = s.buffer()
-            // Seek to local header offset by skipping forward
-            var remaining = entry.localHeaderOffset
-            while (remaining > 0) {
-                val skipped = src.skip(remaining)
-                if (skipped <= 0) break
-                remaining -= skipped
-            }
+            val src = Buffer()
+            src.transferFrom(s)
+            src.skip(entry.localHeaderOffset)
             val sig = src.readIntLe()
             require(sig == SIG_LOC) { "Bad local header" }
             src.skip(2) // ver
@@ -100,7 +95,7 @@ object ZipReader {
                     var written = 0L
                     while (left > 0) {
                         val n = minOf(left, 8192L)
-                        src.readFully(buf, n)
+                        src.readTo(buf, n)
                         out.write(buf, n)
                         written += n
                         left -= n
@@ -109,8 +104,8 @@ object ZipReader {
                 }
                 8 -> { // DEFLATE raw
                     val payload = Buffer()
-                    src.readFully(payload, compSize)
-                    val (rc, outBytes) = InflateStream.inflateRaw(payload, out)
+                    src.readTo(payload, compSize)
+                    val (_, outBytes) = InflateStream.inflateRaw(payload, out)
                     outBytes
                 }
                 else -> error("Unsupported compression: $method")
@@ -122,14 +117,15 @@ object ZipReader {
         val maxComment = 0xFFFF
         val search = minOf(size, (22 + maxComment).toLong())
         src.skip(size - search)
-        val window = src.readByteArray(search)
+        val window = src.readByteArray(search.toInt())
         for (i in window.size - 22 downTo 0) {
             if (window[i].toInt() and 0xFF == 0x50 &&
-                window.getOrNull(i + 1)?.toInt()?.and(0xFF) == 0x4B &&
-                window.getOrNull(i + 2)?.toInt()?.and(0xFF) == 0x05 &&
-                window.getOrNull(i + 3)?.toInt()?.and(0xFF) == 0x06
+                (window.getOrNull(i + 1)?.toInt()?.and(0xFF) ?: 0) == 0x4B &&
+                (window.getOrNull(i + 2)?.toInt()?.and(0xFF) ?: 0) == 0x05 &&
+                (window.getOrNull(i + 3)?.toInt()?.and(0xFF) ?: 0) == 0x06
             ) {
-                val buf = Buffer().write(window, i, window.size - i)
+                val buf = Buffer()
+                buf.write(window, i, window.size)
                 buf.skip(4) // sig
                 buf.skip(2) // disk
                 buf.skip(2) // cd start disk
@@ -137,11 +133,9 @@ object ZipReader {
                 buf.skip(2) // total entries
                 val cdSize = buf.readIntLe().toLong() and 0xFFFFFFFFL
                 val cdOffset = buf.readIntLe().toLong() and 0xFFFFFFFFL
-                val commentLen = buf.readShortLe().toInt() and 0xFFFF
                 return Eocd(cdOffset, cdSize, 0)
             }
         }
         return null
     }
 }
-
