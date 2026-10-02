@@ -1,6 +1,6 @@
-package ai.solace.zlib.test
+package io.github.kotlinmania.zlib.test
 
-import ai.solace.zlib.common.ZlibLogger
+import io.github.kotlinmania.zlib.common.ZlibLogger
 import kotlin.test.Test
 
 /**

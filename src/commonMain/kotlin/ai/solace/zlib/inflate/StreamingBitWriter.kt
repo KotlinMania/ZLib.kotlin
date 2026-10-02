@@ -1,7 +1,7 @@
-package ai.solace.zlib.inflate
+package io.github.kotlinmania.zlib.inflate
 
-import ai.solace.zlib.bitwise.ArithmeticBitwiseOps
-import io.github.kotlinmania.io.Sink
+import io.github.kotlinmania.zlib.bitwise.ArithmeticBitwiseOps
+import okio.BufferedSink
 
 /**
  * StreamingBitWriter - LSB-first bit writer to a streaming sink.

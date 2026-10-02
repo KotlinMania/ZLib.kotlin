@@ -1,4 +1,4 @@
-package ai.solace.zlib.bitwise
+package io.github.kotlinmania.zlib.bitwise
 
 /**
  * BitBuffer - A class for managing bit-level operations on a buffer

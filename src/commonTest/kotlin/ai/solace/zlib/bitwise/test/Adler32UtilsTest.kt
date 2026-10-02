@@ -1,6 +1,6 @@
-package ai.solace.zlib.bitwise.test
+package io.github.kotlinmania.zlib.bitwise.test
 
-import ai.solace.zlib.bitwise.checksum.Adler32Utils
+import io.github.kotlinmania.zlib.bitwise.checksum.Adler32Utils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

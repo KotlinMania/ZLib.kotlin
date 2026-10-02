@@ -1,8 +1,8 @@
-package ai.solace.zlib.util
+package io.github.kotlinmania.zlib.util
 
-import ai.solace.zlib.bitwise.BitShiftEngine
-import ai.solace.zlib.bitwise.BitShiftMode
-import ai.solace.zlib.bitwise.BitwiseOps
+import io.github.kotlinmania.zlib.bitwise.BitShiftEngine
+import io.github.kotlinmania.zlib.bitwise.BitShiftMode
+import io.github.kotlinmania.zlib.bitwise.BitwiseOps
 
 /**
  * Utility functions for bit manipulation operations.

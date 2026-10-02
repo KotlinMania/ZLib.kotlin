@@ -1,5 +1,5 @@
 version = 1
-name = "zlib-kotlin"
+name = "proc-macro-kotlin"
 
 [setup]
 script = '''

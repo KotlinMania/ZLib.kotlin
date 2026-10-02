@@ -1,6 +1,6 @@
-package ai.solace.zlib.test
+package io.github.kotlinmania.zlib.test
 
-import ai.solace.zlib.common.MAX_WBITS
+import io.github.kotlinmania.zlib.common.MAX_WBITS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

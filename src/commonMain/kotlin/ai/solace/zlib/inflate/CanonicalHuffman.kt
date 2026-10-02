@@ -1,6 +1,6 @@
-package ai.solace.zlib.inflate
+package io.github.kotlinmania.zlib.inflate
 
-import ai.solace.zlib.bitwise.ArithmeticBitwiseOps
+import io.github.kotlinmania.zlib.bitwise.ArithmeticBitwiseOps
 
 /**
  * Canonical Huffman utilities (full table) for fast decoding.

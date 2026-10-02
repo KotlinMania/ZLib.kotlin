@@ -1,6 +1,6 @@
 @file:Suppress("ktlint:standard:property-naming")
 
-package ai.solace.zlib.common
+package io.github.kotlinmania.zlib.common
 
 import io.github.kotlinmania.io.buffered
 import io.github.kotlinmania.io.files.Path

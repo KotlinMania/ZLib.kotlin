@@ -1,7 +1,7 @@
-package ai.solace.zlib.util.test
+package io.github.kotlinmania.zlib.util.test
 
-import ai.solace.zlib.bitwise.BitShiftMode
-import ai.solace.zlib.util.BitUtils
+import io.github.kotlinmania.zlib.bitwise.BitShiftMode
+import io.github.kotlinmania.zlib.util.BitUtils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

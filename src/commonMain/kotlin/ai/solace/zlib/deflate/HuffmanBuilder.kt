@@ -1,4 +1,4 @@
-package ai.solace.zlib.deflate
+package io.github.kotlinmania.zlib.deflate
 
 /**
  * Length-limited code-length generator using a Shannon–Fano style partitioning.

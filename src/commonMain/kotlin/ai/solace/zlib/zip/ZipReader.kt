@@ -1,15 +1,12 @@
-package ai.solace.zlib.zip
+package io.github.kotlinmania.zlib.zip
 
-import ai.solace.zlib.inflate.InflateStream
-import io.github.kotlinmania.io.Buffer
-import io.github.kotlinmania.io.Sink
-import io.github.kotlinmania.io.files.FileSystem
-import io.github.kotlinmania.io.files.Path
-import io.github.kotlinmania.io.readByteArray
-import io.github.kotlinmania.io.readIntLe
-import io.github.kotlinmania.io.readShortLe
-import io.github.kotlinmania.io.readString
-import io.github.kotlinmania.io.write
+import io.github.kotlinmania.zlib.inflate.InflateStream
+import okio.Buffer
+import okio.BufferedSink
+import okio.FileSystem
+import okio.Path
+import okio.Source
+import okio.buffer
 
 /** Minimal ZIP reader supporting STORE (0) and DEFLATE (8, raw). */
 object ZipReader {

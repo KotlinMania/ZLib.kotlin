@@ -1,4 +1,4 @@
-package ai.solace.zlib.bitwise.test
+package io.github.kotlinmania.zlib.bitwise.test
 
 import kotlin.random.Random
 import kotlin.test.Test
