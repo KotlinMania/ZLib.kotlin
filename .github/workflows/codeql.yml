@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
 
+  workflow_dispatch:
 jobs:
   actions:
     uses: ./.github/workflows/codeql-actions.yml
