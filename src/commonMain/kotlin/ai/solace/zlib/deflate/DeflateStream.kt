@@ -906,7 +906,10 @@ object DeflateStream {
                 var bits = 0L
                 for (t in tokens) {
                     when (t) {
-                        is TokLit -> bits += litBits[t.b]
+                        is TokLit -> {
+                            bits += litBits[t.b]
+                        }
+
                         is TokMatch -> {
                             val lm = mapLengthToSymbol(t.len)
                             bits += litBits[lm.codeSymbol]
@@ -949,8 +952,12 @@ object DeflateStream {
             // Choose encoding for this block
             val choice =
                 when {
-                    costStored <= costDynamic && costStored <= costFixed -> 0 // stored
-                    costDynamic <= costFixed -> 2 // dynamic
+                    costStored <= costDynamic && costStored <= costFixed -> 0
+
+                    // stored
+                    costDynamic <= costFixed -> 2
+
+                    // dynamic
                     else -> 1 // fixed
                 }
 
@@ -962,7 +969,10 @@ object DeflateStream {
             ) {
                 for (t in tokens) {
                     when (t) {
-                        is TokLit -> writeSymbol(t.b)
+                        is TokLit -> {
+                            writeSymbol(t.b)
+                        }
+
                         is TokMatch -> {
                             var remaining = t.len
                             val d = t.dist

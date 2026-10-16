@@ -238,22 +238,30 @@ object InflateStream {
         var i = 0
         while (i < count) {
             when (val sym = CanonicalHuffman.decodeOne(br, clTable)) {
-                in 0..15 -> out[i++] = sym
+                in 0..15 -> {
+                    out[i++] = sym
+                }
+
                 16 -> {
                     if (i == 0) return null
                     val repeat = 3 + br.take(2)
                     val prev = out[i - 1]
                     repeat(repeat) { if (i < count) out[i++] = prev else return null }
                 }
+
                 17 -> {
                     val repeat = 3 + br.take(3)
                     repeat(repeat) { if (i < count) out[i++] = 0 else return null }
                 }
+
                 18 -> {
                     val repeat = 11 + br.take(7)
                     repeat(repeat) { if (i < count) out[i++] = 0 else return null }
                 }
-                else -> return null
+
+                else -> {
+                    return null
+                }
             }
         }
         return out
@@ -273,8 +281,14 @@ object InflateStream {
         loop@ while (true) {
             val sym = decodeSymOrThrow(br, litTable, "fixed lit")
             when {
-                sym < 256 -> writeByte(sym, sink, window, posRef, adler, outCount)
-                sym == 256 -> break@loop
+                sym < 256 -> {
+                    writeByte(sym, sink, window, posRef, adler, outCount)
+                }
+
+                sym == 256 -> {
+                    break@loop
+                }
+
                 else -> {
                     val length = decodeLength(br, sym)
                     if (length < 0) return Z_DATA_ERROR
@@ -347,8 +361,14 @@ object InflateStream {
         loop@ while (true) {
             val sym = decodeSymOrThrow(br, litTable, "dynamic lit")
             when {
-                sym < 256 -> writeByte(sym, sink, window, posRef, adler, outCount)
-                sym == 256 -> break@loop
+                sym < 256 -> {
+                    writeByte(sym, sink, window, posRef, adler, outCount)
+                }
+
+                sym == 256 -> {
+                    break@loop
+                }
+
                 else -> {
                     val length = decodeLength(br, sym)
                     if (length < 0) return Z_DATA_ERROR
@@ -392,15 +412,20 @@ object InflateStream {
                         val r = copyStored(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
+
                     1 -> {
                         val r = decodeFixed(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
+
                     2 -> {
                         val r = decodeDynamic(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
-                    else -> return Z_DATA_ERROR to totalOut
+
+                    else -> {
+                        return Z_DATA_ERROR to totalOut
+                    }
                 }
                 // Update bytesOut using tracked count
                 totalOut = outCount[0]
@@ -457,15 +482,20 @@ object InflateStream {
                         val r = copyStored(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
+
                     1 -> {
                         val r = decodeFixed(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
+
                     2 -> {
                         val r = decodeDynamic(br, sink, window, posRef, adler, outCount)
                         if (r != Z_OK) return r to totalOut
                     }
-                    else -> return Z_DATA_ERROR to totalOut
+
+                    else -> {
+                        return Z_DATA_ERROR to totalOut
+                    }
                 }
                 totalOut = outCount[0]
                 if (last == 1) break

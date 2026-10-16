@@ -93,6 +93,7 @@ fun main(args: Array<String>) {
             ZlibLogger.setBitwiseVerbose(false)
             println("Logging enabled (DEBUG=off, BITWISE=off). Use environment vars ZLIB_LOG_DEBUG=1 and ZLIB_LOG_BITWISE=1 for more detail.")
         }
+
         "log-off" -> {
             ZlibLogger.setEnabled(false)
             println("Logging disabled")

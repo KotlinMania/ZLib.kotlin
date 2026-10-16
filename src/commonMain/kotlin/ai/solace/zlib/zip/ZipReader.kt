@@ -99,13 +99,17 @@ object ZipReader {
                     }
                     written
                 }
+
                 8 -> { // DEFLATE raw
                     val payload = Buffer()
                     src.readTo(payload, compSize)
                     val (_, outBytes) = InflateStream.inflateRaw(payload, out)
                     outBytes
                 }
-                else -> error("Unsupported compression: $method")
+
+                else -> {
+                    error("Unsupported compression: $method")
+                }
             }
         }
     }

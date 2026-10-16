@@ -35,9 +35,14 @@ class BitShiftEngine(
     private val maxValue =
         when (bitWidth) {
             8 -> 0xFFL
+
             16 -> 0xFFFFL
+
             32 -> 0xFFFFFFFFL
-            64 -> 0x7FFFFFFFFFFFFFFFL // Use max signed long to avoid overflow
+
+            64 -> 0x7FFFFFFFFFFFFFFFL
+
+            // Use max signed long to avoid overflow
             else -> error("Unsupported bit width: $bitWidth")
         }
 
