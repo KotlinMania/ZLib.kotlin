@@ -21,3 +21,5 @@ simple_test.kt
 .android-sdk/
 # IntelliJ project metadata is per machine
 .idea/
+node_modules/
+package-lock.json
