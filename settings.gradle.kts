@@ -15,4 +15,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "proc-macro-kotlin"
+rootProject.name = "zlib-kotlin"
