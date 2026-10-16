@@ -19,3 +19,5 @@ demo_*.zz
 debug_*.kt
 simple_test.kt
 .android-sdk/
+# IntelliJ project metadata is per machine
+.idea/
