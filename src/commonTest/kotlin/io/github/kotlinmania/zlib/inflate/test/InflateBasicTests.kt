@@ -1,0 +1,51 @@
+package io.github.kotlinmania.zlib.inflate.test
+
+import io.github.kotlinmania.io.Buffer
+import io.github.kotlinmania.io.readString
+import io.github.kotlinmania.io.writeString
+import io.github.kotlinmania.zlib.common.Z_BUF_ERROR
+import io.github.kotlinmania.zlib.common.Z_STREAM_END
+import io.github.kotlinmania.zlib.deflate.DeflateStream
+import io.github.kotlinmania.zlib.inflate.InflateStream
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class InflateBasicTests {
+    @Test
+    fun inflate_returnsZStreamEnd_andRestoresOriginal() {
+        val original = "hello world"
+        val src = Buffer().apply { writeString(original) }
+        val compressed = Buffer()
+
+        // Compress using default level
+        val bytesIn = DeflateStream.compressZlib(src, compressed)
+        assertEquals(original.length.toLong(), bytesIn)
+
+        // Now inflate
+        val out = Buffer()
+        val (rc, bytesOut) = InflateStream.inflateZlib(compressed, out)
+        assertEquals(Z_STREAM_END, rc)
+        assertEquals(original.length.toLong(), bytesOut)
+        assertEquals(original, out.readString())
+    }
+
+    @Test
+    fun inflate_truncated_after_header_returnsZBufError() {
+        // Create a minimal valid zlib stream by compressing empty input
+        val empty = Buffer()
+        val full = Buffer()
+        DeflateStream.compressZlib(empty, full)
+        // Truncate to just the header (2 bytes)
+        val truncated = Buffer()
+        val headerByte1 = full.readByte()
+        val headerByte2 = full.readByte()
+        truncated.writeByte(headerByte1)
+        truncated.writeByte(headerByte2)
+
+        val out = Buffer()
+        val (rc, _) = InflateStream.inflateZlib(truncated, out)
+        assertEquals(Z_BUF_ERROR, rc, "Expected Z_BUF_ERROR for truncated stream after header")
+        assertTrue(out.size == 0L)
+    }
+}
