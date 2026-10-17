@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "SwiftTestHarness",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v15),
     ],
     dependencies: [
         .package(name: "ZLib", path: "../build/SPMPackage/macosArm64/Debug")

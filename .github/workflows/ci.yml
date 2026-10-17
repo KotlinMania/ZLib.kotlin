@@ -15,9 +15,6 @@ permissions:
 # inside a larger combined job. Re-runs and pass/fail attribution happen at
 # the platform granularity.
 #
-# CodeQL workflows live in .github/workflows/codeql.yml and are NOT invoked
-# from here — they have their own trigger and run independently.
-#
 # Branch trigger is `main` only. The previous shape `[main, master]` would
 # fire CI on any branch literally named `master`, which is a workflow-content
 # trust escalation since GitHub Actions runs the workflow file from the
