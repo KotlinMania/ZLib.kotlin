@@ -163,6 +163,16 @@ val browserTestExcludes =
         .map { it.trim() }
         .filter { it.isNotEmpty() }
 
+// Extra Kotlin compiler arguments for this repo, from
+// project.kotlin.freeCompilerArgs as a comma-separated list (empty by default).
+val extraKotlinCompilerArgs =
+    providers
+        .gradleProperty("project.kotlin.freeCompilerArgs")
+        .getOrElse("")
+        .split(',')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+
 // Opt-ins shared across Kotlin targets.
 val commonOptIns =
     listOf(
@@ -350,9 +360,21 @@ writeAndroidLocalProperties()
 
 fun requestedTaskWantsAndroid(rawTaskName: String): Boolean {
     val taskName = rawTaskName.substringAfterLast(':')
-    if (taskName.contains("AndroidNative")) return false // Kotlin/Native, no SDK
-    if (taskName.contains("Android")) return true // direct AGP tasks
-    return taskName in setOf("build", "assemble", "check") // aggregates pull android
+    if (taskName.contains("AndroidNative", ignoreCase = true)) return false // Kotlin/Native, no SDK
+    if (taskName.contains("Android", ignoreCase = true)) return true // direct AGP tasks
+    return taskName in
+        setOf(
+            "build",
+            "assemble",
+            "check",
+            "test",
+            "hostTests",
+            "classes",
+            "testClasses",
+            "allTests",
+            "assembleUnitTest",
+            "assembleAndroidTest",
+        )
 }
 
 if (gradle.startParameter.taskNames.any(::requestedTaskWantsAndroid)) {
@@ -375,8 +397,12 @@ tasks
     .matching { task ->
         val taskName = task.name
         taskName != "ensureAndroidSdk" &&
-            taskName.contains("Android") &&
-            !taskName.contains("AndroidNative")
+            taskName != "setupAndroidSdk" &&
+            (
+                taskName.contains("Android", ignoreCase = true) ||
+                    taskName in setOf("assembleUnitTest", "assembleAndroidTest")
+            ) &&
+            !taskName.contains("AndroidNative", ignoreCase = true)
     }.configureEach {
         dependsOn(ensureAndroidSdk)
     }
@@ -426,6 +452,7 @@ kotlin {
         allWarningsAsErrors.set(true)
         optIn.addAll(commonOptIns)
         freeCompilerArgs.addAll("-Xexpect-actual-classes", "-Xsuppress-version-warnings")
+        freeCompilerArgs.addAll(extraKotlinCompilerArgs)
     }
 
     val xcf = XCFramework(frameworkName)
@@ -1536,6 +1563,18 @@ tasks.matching { it.name.contains("GenerateSPMPackage") }.configureEach {
                 }
                 file.writeText(text)
             }
+            // Swift Export spells Foundation's stream classes by their Objective-C names, which
+            // Swift rejects ("'NSInputStream' has been renamed to 'InputStream'").
+            spmDir.walkTopDown().filter { it.isFile && it.extension == "swift" }.forEach { file ->
+                val text = file.readText()
+                val renamed =
+                    text
+                        .replace("Foundation.NSInputStream", "Foundation.InputStream")
+                        .replace("Foundation.NSOutputStream", "Foundation.OutputStream")
+                if (renamed != text) {
+                    file.writeText(renamed)
+                }
+            }
             spmDir.walkTopDown().filter { it.name == "OrgJetbrainsKotlinxKotlinxSerializationCore.swift" }.forEach { file ->
                 val text = file.readText()
                 val cleaned =
@@ -1679,4 +1718,69 @@ val fullTargetBuildTaskNames =
 
 tasks.named("build") {
     dependsOn(fullTargetBuildTaskNames)
+}
+
+tasks.register("classes") {
+    dependsOn(
+        "compileAndroidMain",
+        "jvmMainClasses",
+        "jsMainClasses",
+        "wasmJsMainClasses",
+        "wasmWasiMainClasses",
+    )
+}
+
+tasks.register("testClasses") {
+    dependsOn(
+        "compileAndroidHostTest",
+        "jvmTestClasses",
+        "jsTestClasses",
+        "wasmJsTestClasses",
+        "wasmWasiTestClasses",
+    )
+}
+
+// Kotlin/Wasm's generated WASI test driver preopens no directories (KT-65179), so
+// filesystem tests cannot reach any path. project.wasmWasi.testPreopens lists guest
+// directories to map onto fresh host temporary directories for wasmWasiNodeTest.
+val wasmWasiTestPreopens =
+    providers
+        .gradleProperty("project.wasmWasi.testPreopens")
+        .getOrElse("")
+        .split(',')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+
+if (wasmWasiTestPreopens.isNotEmpty()) {
+    tasks.named("wasmWasiNodeTest") {
+        val driverDir = layout.buildDirectory.dir("compileSync/wasmWasi/test/testDevelopmentExecutable/kotlin")
+        val hostRoot = layout.buildDirectory.dir("tmp/wasmWasiTestPreopens")
+        doFirst {
+            val driver =
+                driverDir
+                    .get()
+                    .asFile
+                    .listFiles { file -> file.name.endsWith("-test.mjs") }
+                    ?.singleOrNull()
+                    ?: throw GradleException("wasmWasi test driver not found in ${driverDir.get().asFile}")
+            val root = hostRoot.get().asFile
+            root.deleteRecursively()
+            val mappings =
+                wasmWasiTestPreopens.mapIndexed { index, guest ->
+                    val host = root.resolve("preopen-$index").apply { mkdirs() }
+                    val hostPath = host.absolutePath.replace("\\", "\\\\")
+                    "'$guest': '$hostPath'"
+                }
+            val text = driver.readText()
+            if (!text.contains("preopens:")) {
+                val patched =
+                    text.replaceFirst(
+                        Regex("""new WASI\(\{"""),
+                        "new WASI({ preopens: { ${mappings.joinToString(", ")} },",
+                    )
+                if (patched == text) throw GradleException("Could not add preopens to ${driver.name}")
+                driver.writeText(patched)
+            }
+        }
+    }
 }

@@ -168,6 +168,10 @@ as the default next action when infra is clean.
 - **`port-lint: ignore` is not a real directive** (§3). Strip it when
   you see it. Only `port-lint: source <path>` and `port-lint: tests
   <path>` are recognized.
+- **Pure Kotlin Multiplatform only — never a Java library** (§3). No
+  `java.*` / `javax.*` imports, no JVM-only or third-party Java artifacts
+  (okio, Guava, Bouncy Castle, Jackson, ...). The 200+ Rust ports under
+  `kotlinmania/` are the replacement for the Java ecosystem: use them.
 - **Workspace artifacts go under**
   `/Volumes/stuff/Projects/kotlinmania/automation-artifacts/`. No
   `/tmp` scratch (§1).
@@ -493,6 +497,28 @@ A repo that no longer has upstream Rust under `tmp/` and has no
 `.ast_distance_config.json` is a mature Kotlin-first repo: it's
 optimizing for idiomatic Kotlin, not against an upstream Rust oracle.
 That's a state, not a "mode."
+
+### Pure Kotlin Multiplatform only — never import a Java library
+
+Every repo is strictly pure Kotlin on KMP. Never add a Java or JVM-only
+dependency, never import `java.*` / `javax.*` in common code, and never reach
+for platform crypto or IO when a port exists. The workspace's 200+ Rust ports
+(`ls -d /Volumes/stuff/Projects/kotlinmania/*-kotlin`) are a near-complete
+Java replacement. Common needs and the port to use:
+
+| Need | Use |
+|---|---|
+| Hashing, MAC, signatures | `sha1-kotlin`, `sha2-kotlin`, `sha3-kotlin`, `digest-kotlin`, `hmac-kotlin`, `ed25519-dalek-kotlin`, `p256-kotlin`, `crypto-box-kotlin`, `constant-time-eq-kotlin`, `zeroize-kotlin` |
+| IO, buffers, files | `km-io` (`io.github.kotlinmania:km-io`; replaces okio and kotlinx-io), `bytes-kotlin`, `tempfile-kotlin`, `memmap2-kotlin`, `walkdir-kotlin`, `glob-kotlin` |
+| Encoding, text | `base64-kotlin` (or stdlib `kotlin.io.encoding.Base64`), `encoding-rs-kotlin`, `unicode-*-kotlin`, `regex-kotlin`, `fancy-regex-kotlin` |
+| Data formats | `serde-kotlin`, `serde-json-kotlin`, `serde-yaml-kotlin`, `toml-kotlin`, `csv-kotlin`, `quick-xml-kotlin`, `bincode-kotlin`, `prost-kotlin` |
+| Compression, archives | `flate2-kotlin`, `zlib-kotlin`, `zstd-kotlin`, `zip-kotlin`, `tar-kotlin` |
+| Time, ids, random | `chrono-kotlin`, `time-kotlin`, `uuid-kotlin`, `rand-kotlin`, `getrandom-kotlin` |
+| Networking, async | `tokio-kotlin`, `http-kotlin`, `reqwest-kotlin`, `url-kotlin`, `rustls-kotlin`, `tungstenite-kotlin`, `futures-kotlin` |
+
+If a needed capability has no port yet, port it (see below); do not paper
+over the gap with a Java library or an `expect`/`actual` that delegates to
+the JVM.
 
 ### When you can't port a Rust dependency: check kotlinmania siblings first
 
